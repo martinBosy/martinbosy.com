@@ -7,9 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof init === "function") init();
 });
 
-function initCommon() {
-  console.log("MAIN JS IS LOADED");
-}
+function initCommon()
 
 const PAGE_INITS = {
   home: initHome,
