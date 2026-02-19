@@ -7,7 +7,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof init === "function") init();
 });
 
-function initCommon()
+function initCommon() {
+  // Keep only lightweight global code here
+  // console.log("Common loaded");
+}
 
 const PAGE_INITS = {
   home: initHome,
