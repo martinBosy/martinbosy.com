@@ -1,0 +1,33 @@
+document.addEventListener("DOMContentLoaded", () => {
+  initCommon();
+  initClientPages();
+  initOtherPages();
+});
+
+// ===============================
+// COMMON (runs everywhere)
+// ===============================
+
+function initCommon() {
+  console.log("Common loaded");
+}
+
+// ===============================
+// CLIENT PAGES
+// ===============================
+
+function initClientPages() {
+  if (document.body.dataset.page !== "client") return;
+
+  console.log("Client page loaded");
+}
+
+// ===============================
+// OTHER PAGES
+// ===============================
+
+function initOtherPages() {
+  if (document.body.dataset.page !== "other") return;
+
+  console.log("Other page loaded");
+}
