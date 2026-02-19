@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  initCommon() {console.log("MAIN JS IS LOADED");};
+  initCommon();
 
   const page = document.body.dataset.page || "";
   const init = PAGE_INITS[page];
@@ -8,17 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initCommon() {
-  // Keep only lightweight global code here
-  // Example:
-  // console.log("Common loaded");
+  console.log("MAIN JS IS LOADED");
 }
 
 const PAGE_INITS = {
   home: initHome,
   client: initClient,
   media: initMedia,
-  // add more later, e.g.:
-  // about: initAbout,
 };
 
 function initHome() {
@@ -27,7 +23,7 @@ function initHome() {
 }
 
 function initClient() {
-  // client page code (your swipers, randomize, etc.)
+  // client page code
   // console.log("Client init");
 }
 
