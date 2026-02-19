@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  initCommon();
+  initCommon() {console.log("MAIN JS IS LOADED");};
 
   const page = document.body.dataset.page || "";
   const init = PAGE_INITS[page];
