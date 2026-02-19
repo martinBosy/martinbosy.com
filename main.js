@@ -19,15 +19,12 @@ const PAGE_INITS = {
 
 function initHome() {
   // home page code
-  // console.log("Home init");
 }
 
 function initClient() {
   // client page code
-  // console.log("Client init");
 }
 
 function initMedia() {
   // media page code
-  // console.log("Media init");
 }
