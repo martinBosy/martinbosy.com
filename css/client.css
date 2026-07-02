@@ -1,0 +1,215 @@
+/* =========================================
+   LOCK STATES
+========================================= */
+
+.slider-category_component .lock-open {
+  display: block !important;
+}
+
+.slider-category_component .lock-closed {
+  display: none !important;
+}
+
+.slider-category_component.is-locked .lock-open {
+  display: none !important;
+}
+
+.slider-category_component.is-locked .lock-closed {
+  display: block !important;
+}
+
+
+/* =========================================
+   LOCK SWITCH: active + focus state
+========================================= */
+
+.lock-switch.is-on {
+  background: #34c759;
+  border-color: rgba(52, 199, 89, 0.55);
+}
+
+.lock-switch.is-on .lock-switch__thumb {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.lock-switch:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.45);
+  outline-offset: 3px;
+}
+
+
+/* =========================================
+   OVERLAY: transitions
+   Display/open logic stays as critical CSS in Webflow Head.
+========================================= */
+
+.exercise-overlay {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.exercise-overlay[data-open="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* =========================================
+   DEEPDIVE: collapse fade mask
+   .deepdive-body toggles .is-shrinked
+========================================= */
+
+:root {
+  --fade-size: 5vh;
+}
+
+.exercise-overlay .deepdive-body.is-shrinked {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-size)),
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) calc(100% - var(--fade-size)),
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.exercise-overlay .deepdive-body:not(.is-shrinked) {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+
+/* =========================================
+   DEEPDIVE: editorial typography
+========================================= */
+
+.exercise-scene.deepdive .deepdive-body {
+  max-width: 65ch;
+  line-height: 1.6;
+}
+
+/* Vertical rhythm */
+.exercise-scene.deepdive .deepdive-body > * + * {
+  margin-top: 1rem;
+}
+
+/* H4 */
+.exercise-scene.deepdive .deepdive-body h4 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.28;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Paragraphs */
+.exercise-scene.deepdive .deepdive-body p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Lists */
+.exercise-scene.deepdive .deepdive-body ul,
+.exercise-scene.deepdive .deepdive-body ol {
+  padding-left: 1.25rem;
+  margin: 0;
+  max-width: 65ch;
+}
+
+.exercise-scene.deepdive .deepdive-body li {
+  line-height: 1.6;
+  max-width: 65ch;
+}
+
+.exercise-scene.deepdive .deepdive-body li + li {
+  margin-top: 0.5rem;
+}
+
+/* Images in rich text */
+.exercise-scene.deepdive .deepdive-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Mobile portrait adjustments */
+@media (max-width: 479px) {
+  .exercise-scene.deepdive .deepdive-body {
+    line-height: 1.55;
+  }
+
+  .exercise-scene.deepdive .deepdive-body h4 {
+    font-size: 1.2rem;
+    line-height: 1.25;
+    margin-top: 1.5rem;
+  }
+}
+
+
+/* =========================================
+   DEEPDIVE: graphic viewport behavior
+   .deepdive-graphic has fixed height in Webflow
+========================================= */
+
+.exercise-scene.deepdive .deepdive-graphic img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+}
+
+
+/* =========================================
+   EXECUTE: Vimeo iframe behavior
+========================================= */
+
+#executeVimeoMount iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Only mobile portrait should ever scale */
+@media (max-width: 767px) and (orientation: portrait) {
+  #executeOverlay.is-fill #executeVimeoMount iframe {
+    scale: 1.42;
+    transform-origin: center;
+  }
+}
+
+
+/* =========================================
+   COORDINATION VIDEO
+========================================= */
+
+.coordination_video iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* =========================================
+   HOW TO OVERLAY: transition only
+   Visibility/open logic stays as critical CSS in Webflow Head.
+========================================= */
+
+.howto-overlay {
+  transition: opacity 200ms ease;
+}
