@@ -23,7 +23,7 @@ function initHome() {
 }
 
 function initClient() {
-  // client page code
+  console.log("CLIENT PAGE CODE IS RUNNING")
 }
 
 function initMedia() {
