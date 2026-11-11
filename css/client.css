@@ -37,7 +37,57 @@
   outline-offset: 3px;
 }
 
+/* =========================================
+   CATEGORY OFF STATE
+========================================= */
 
+/* Category heading */
+.slider-category_component[data-enabled="false"] .move_category_heading {
+  opacity: 0.45;
+}
+
+/* Main exercise card */
+.slider-category_component[data-enabled="false"] .move-category-box {
+  opacity: 0.62;
+  filter: grayscale(1);
+}
+
+/* Exercise title + description */
+.slider-category_component[data-enabled="false"] .move_category_text_block {
+  opacity: 0.72;
+}
+
+/* Previous / next arrows */
+.slider-category_component[data-enabled="false"] .swiper-button {
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+/* Exercise lock */
+.slider-category_component[data-enabled="false"] .lock-switch_wrapper {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Keep the category ON/OFF switch fully visible */
+.slider-category_component[data-enabled="false"] .off-switch {
+  opacity: 1;
+}
+
+
+/* =========================================
+   SMOOTH STATE TRANSITIONS
+========================================= */
+
+.move_category_heading,
+.move-category-box,
+.move_category_text_block,
+.swiper-button,
+.lock-switch_wrapper {
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease;
+}
 /* =========================================
    OVERLAY: transitions
    Display/open logic stays as critical CSS in Webflow Head.
