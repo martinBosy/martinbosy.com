@@ -25,7 +25,7 @@
 
 .off-switch.is-off {
   background: rgba(255, 0, 0, 0.5);
-  border-color: rgba(52, 199, 89, 0.22);
+  border-color: rgba(255, 0, 0, 0.3);
 }
 
 .off-switch.is-off .off-switch__thumb {
@@ -36,6 +36,7 @@
   outline: 2px solid rgba(0, 0, 0, 0.45);
   outline-offset: 3px;
 }
+
 
 /* =========================================
    CATEGORY OFF STATE
@@ -89,12 +90,21 @@
     filter 180ms ease;
 }
 
-.slider-category_component.is-changing-exercise .move-category_text_block {
+
+/* =========================================
+   EXERCISE SWITCH FADE
+   Only the changing text fades.
+========================================= */
+
+.slider-category_component.is-changing-exercise .move_category_text_block {
   opacity: 0;
 }
+
+
 /* =========================================
    OVERLAY: transitions
-   Display/open logic stays as critical CSS in Webflow Head.
+   Display/open logic stays as critical CSS
+   in Webflow Head.
 ========================================= */
 
 .exercise-overlay {
@@ -124,14 +134,17 @@
     rgba(0, 0, 0, 1) calc(100% - var(--fade-size)),
     rgba(0, 0, 0, 0) 100%
   );
+
   mask-image: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 1) 0%,
     rgba(0, 0, 0, 1) calc(100% - var(--fade-size)),
     rgba(0, 0, 0, 0) 100%
   );
+
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
+
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
@@ -197,7 +210,11 @@
   border-radius: 8px;
 }
 
-/* Mobile portrait adjustments */
+
+/* =========================================
+   MOBILE PORTRAIT ADJUSTMENTS
+========================================= */
+
 @media (max-width: 479px) {
   .exercise-scene.deepdive .deepdive-body {
     line-height: 1.55;
@@ -213,7 +230,8 @@
 
 /* =========================================
    DEEPDIVE: graphic viewport behavior
-   .deepdive-graphic has fixed height in Webflow
+   .deepdive-graphic has fixed height
+   in Webflow.
 ========================================= */
 
 .exercise-scene.deepdive .deepdive-graphic img {
@@ -260,7 +278,8 @@
 
 /* =========================================
    HOW TO OVERLAY: transition only
-   Visibility/open logic stays as critical CSS in Webflow Head.
+   Visibility/open logic stays as critical
+   CSS in Webflow Head.
 ========================================= */
 
 .howto-overlay {
