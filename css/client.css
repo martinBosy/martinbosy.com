@@ -20,20 +20,19 @@
 
 
 /* =========================================
-   LOCK SWITCH: active + focus state
+   OFF SWITCH: active + focus state
 ========================================= */
 
-.lock-switch.is-on {
-  background: #34c759;
-  border-color: rgba(52, 199, 89, 0.55);
+.off-switch.is-on {
+  background: rgba(255, 0, 0, 0.5);
+  border-color: rgba(52, 199, 89, 0.22);
 }
 
-.lock-switch.is-on .lock-switch__thumb {
-  transform: translateX(18px);
-  background: #fff;
+.off-switch.is-on .off-switch__thumb {
+  transform: translateX(-18px);
 }
 
-.lock-switch:focus-visible {
+.off-switch:focus-visible {
   outline: 2px solid rgba(0, 0, 0, 0.45);
   outline-offset: 3px;
 }
