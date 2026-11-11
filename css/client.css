@@ -1,5 +1,5 @@
 /* =========================================
-   LOCK STATES
+   EXERCISE SELECTION LOCK
 ========================================= */
 
 .lock-switch_wrapper .lock-open {
@@ -10,22 +10,35 @@
   display: none;
 }
 
-.move-category-box.is-locked .lock-open {
+.slider-category_component.is-exercise-locked .lock-open {
   display: none;
 }
 
-.move-category-box.is-locked .lock-closed {
+.slider-category_component.is-exercise-locked .lock-closed {
   display: block;
 }
 
 
 /* =========================================
-   OFF SWITCH: active + focus state
+   CATEGORY LOCKED STATE
+   The selected exercise is frozen.
+========================================= */
+
+.slider-category_component.is-exercise-locked .swiper-button,
+.slider-category_component.is-exercise-locked .swiper-next,
+.slider-category_component.is-exercise-locked .swiper-prev {
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+
+/* =========================================
+   OFF SWITCH
 ========================================= */
 
 .off-switch.is-off {
-  background: rgba(255, 0, 0, 0.3);
-  border-color: rgba(255, 0, 0, 0.2);
+  background: rgba(255, 0, 0, 0.5);
+  border-color: rgba(255, 0, 0, 0.3);
 }
 
 .off-switch.is-off .off-switch__thumb {
@@ -42,48 +55,46 @@
    CATEGORY OFF STATE
 ========================================= */
 
-/* Category heading */
 .slider-category_component[data-enabled="false"] .move_category_heading {
   opacity: 0.45;
 }
 
-/* Main exercise card */
 .slider-category_component[data-enabled="false"] .move-category-box {
   opacity: 0.62;
   filter: grayscale(1);
 }
 
-/* Exercise title + description */
 .slider-category_component[data-enabled="false"] .move_category_text_block {
   opacity: 0.72;
 }
 
-/* Previous / next arrows */
-.slider-category_component[data-enabled="false"] .swiper-button {
+.slider-category_component[data-enabled="false"] .swiper-button,
+.slider-category_component[data-enabled="false"] .swiper-next,
+.slider-category_component[data-enabled="false"] .swiper-prev {
   opacity: 0.18;
   pointer-events: none;
 }
 
-/* Exercise lock */
 .slider-category_component[data-enabled="false"] .lock-switch_wrapper {
   opacity: 0.25;
   pointer-events: none;
 }
 
-/* Keep the category ON/OFF switch fully visible */
 .slider-category_component[data-enabled="false"] .off-switch {
   opacity: 1;
 }
 
 
 /* =========================================
-   SMOOTH STATE TRANSITIONS
+   STATE TRANSITIONS
 ========================================= */
 
 .move_category_heading,
 .move-category-box,
 .move_category_text_block,
 .swiper-button,
+.swiper-next,
+.swiper-prev,
 .lock-switch_wrapper {
   transition:
     opacity 140ms ease,
@@ -93,7 +104,7 @@
 
 /* =========================================
    EXERCISE SWITCH FADE
-   Only the changing text fades.
+   Only changing exercise text fades.
 ========================================= */
 
 .slider-category_component.is-changing-exercise .move_category_text_block {
@@ -102,9 +113,9 @@
 
 
 /* =========================================
-   OVERLAY: transitions
-   Display/open logic stays as critical CSS
-   in Webflow Head.
+   OVERLAY TRANSITIONS
+   Visibility/open logic remains in the
+   critical Webflow Head CSS.
 ========================================= */
 
 .exercise-overlay {
@@ -119,8 +130,7 @@
 
 
 /* =========================================
-   DEEPDIVE: collapse fade mask
-   .deepdive-body toggles .is-shrinked
+   DEEP DIVE: COLLAPSE FADE MASK
 ========================================= */
 
 :root {
@@ -156,7 +166,7 @@
 
 
 /* =========================================
-   DEEPDIVE: editorial typography
+   DEEP DIVE: EDITORIAL TYPOGRAPHY
 ========================================= */
 
 .exercise-scene.deepdive .deepdive-body {
@@ -164,12 +174,10 @@
   line-height: 1.6;
 }
 
-/* Vertical rhythm */
 .exercise-scene.deepdive .deepdive-body > * + * {
   margin-top: 1rem;
 }
 
-/* H4 */
 .exercise-scene.deepdive .deepdive-body h4 {
   font-size: 1.4rem;
   font-weight: 700;
@@ -178,14 +186,12 @@
   margin-bottom: 0.75rem;
 }
 
-/* Paragraphs */
 .exercise-scene.deepdive .deepdive-body p {
   font-size: 1rem;
   line-height: 1.6;
   margin: 0;
 }
 
-/* Lists */
 .exercise-scene.deepdive .deepdive-body ul,
 .exercise-scene.deepdive .deepdive-body ol {
   padding-left: 1.25rem;
@@ -202,7 +208,6 @@
   margin-top: 0.5rem;
 }
 
-/* Images in rich text */
 .exercise-scene.deepdive .deepdive-body img {
   max-width: 100%;
   height: auto;
@@ -212,7 +217,7 @@
 
 
 /* =========================================
-   MOBILE PORTRAIT ADJUSTMENTS
+   DEEP DIVE: MOBILE
 ========================================= */
 
 @media (max-width: 479px) {
@@ -229,9 +234,7 @@
 
 
 /* =========================================
-   DEEPDIVE: graphic viewport behavior
-   .deepdive-graphic has fixed height
-   in Webflow.
+   DEEP DIVE: GRAPHIC VIEWPORT
 ========================================= */
 
 .exercise-scene.deepdive .deepdive-graphic img {
@@ -244,7 +247,7 @@
 
 
 /* =========================================
-   EXECUTE: Vimeo iframe behavior
+   EXECUTE: VIMEO
 ========================================= */
 
 #executeVimeoMount iframe {
@@ -254,7 +257,6 @@
   display: block;
 }
 
-/* Only mobile portrait should ever scale */
 @media (max-width: 767px) and (orientation: portrait) {
   #executeOverlay.is-fill #executeVimeoMount iframe {
     scale: 1.42;
@@ -277,9 +279,9 @@
 
 
 /* =========================================
-   HOW TO OVERLAY: transition only
-   Visibility/open logic stays as critical
-   CSS in Webflow Head.
+   HOW TO OVERLAY
+   Visibility/open logic remains in the
+   critical Webflow Head CSS.
 ========================================= */
 
 .howto-overlay {
