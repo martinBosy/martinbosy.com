@@ -11,6 +11,7 @@ function initClient() {
   }
 
   const ROOT = ".page_wrap";
+
   if (!$(ROOT).length) return;
 
   const SEL = {
@@ -26,31 +27,29 @@ function initClient() {
     // Category ON/OFF
     categorySwitch: ".off-switch",
 
-    // Exercise lock inside each card
+    // Exercise lock
     exerciseLock: ".lock-switch_wrapper",
     lockOpen: ".lock-open",
     lockClosed: ".lock-closed",
 
-    // Triggers inside each card
+    // Exercise actions
     btnDeepdive: ".ex-modes-button.is-deepdive",
     btnExecute: ".ex-modes-button.is-execute",
 
-    // Overlay wrapper + close + mode toggle
+    // Overlay
     overlay: ROOT + " .exercise-overlay",
     overlayClose: ROOT + " .exercise-overlay-close",
     overlayToggle: ROOT + " .overlay-mode-toggle",
 
-    // Deepdive targets
+    // Deep dive
     ddBody: ".deepdive-body",
     ddGraphic: ".deepdive-graphic",
     chevron: ".chevron",
-
-    // Deepdive sources inside card, hidden
     hiddenSource: ".ex-hidden-source",
     ddRichSrc: ".ex-deepdive-rt",
     ddImgSrc: "img.ex-graphic-img",
 
-    // EXECUTE IDs
+    // Execute
     executeOverlay: "#executeOverlay",
     executeMount: "#executeVimeoMount",
     executeDose: "#executeDose",
@@ -67,7 +66,7 @@ function initClient() {
     // Progress
     progressFill: "#executeProgressFill",
 
-    // NEXT internal UI
+    // Completion UI
     nextLabel: ".execute-text-label",
     nextComplete: ".execute-complete",
     completeBtn: ".execute-complete__btn",
@@ -76,41 +75,52 @@ function initClient() {
   const CLS = {
     exerciseLocked: "is-locked",
     executeOpen: "is-open",
+    exerciseChanging: "is-changing-exercise",
   };
+
+  const EXERCISE_FADE_OUT_MS = 120;
+  const EXERCISE_FADE_IN_MS = 140;
 
   let currentCard = null;
   let currentCatIndex = -1;
   let executeMode = "preview";
 
-  // -------------------------
-  // 0) SWIPER INIT
-  // -------------------------
+  // =========================================================
+  // 0) SWIPER
+  // =========================================================
+
   if (typeof Swiper !== "undefined") {
     $(SEL.slider).each(function () {
       const $comp = $(this);
       const swEl = $comp.find(SEL.swiper)[0];
 
-      if (!swEl) return;
-      if ($comp.data("swiper")) return;
+      if (!swEl || $comp.data("swiper")) return;
 
       const inst = new Swiper(swEl, {
-        speed: 200,
+        speed: 0,
         rewind: true,
         allowTouchMove: false,
         slidesPerView: "auto",
-        navigation: {
-          nextEl: $comp.find(SEL.next)[0],
-          prevEl: $comp.find(SEL.prev)[0],
-        },
       });
 
       $comp.data("swiper", inst);
+
+      $comp.find(SEL.next).first()
+        .attr("role", "button")
+        .attr("tabindex", "0")
+        .attr("aria-label", "Next exercise");
+
+      $comp.find(SEL.prev).first()
+        .attr("role", "button")
+        .attr("tabindex", "0")
+        .attr("aria-label", "Previous exercise");
     });
   }
 
-  // -------------------------
+  // =========================================================
   // 1) OVERLAY SHELL
-  // -------------------------
+  // =========================================================
+
   const Overlay = (function () {
     const $ov = $(SEL.overlay).first();
 
@@ -133,7 +143,8 @@ function initClient() {
     }
 
     function open(scene) {
-      $ov.attr("data-open", "true")
+      $ov
+        .attr("data-open", "true")
         .attr("data-active-scene", scene)
         .attr("aria-hidden", "false");
 
@@ -186,6 +197,7 @@ function initClient() {
         .sort((a, b) => b.w - a.w)[0];
 
       if (best?.url) clone.setAttribute("src", best.url);
+
       clone.removeAttribute("srcset");
       clone.removeAttribute("sizes");
     }
@@ -198,13 +210,15 @@ function initClient() {
 
   function setCurrentFromCard($card) {
     currentCard = $card;
+
     const $cat = $card.closest(".slider-category_component");
     currentCatIndex = $(SEL.slider).index($cat);
   }
 
-  // -------------------------
-  // 2) CATEGORY ON/OFF SWITCH
-  // -------------------------
+  // =========================================================
+  // 2) CATEGORY ON/OFF
+  // =========================================================
+
   function isCategoryEnabled($cat) {
     return $cat.attr("data-enabled") !== "false";
   }
@@ -222,10 +236,15 @@ function initClient() {
     $cat.attr("data-enabled", enabled ? "true" : "false");
 
     const inst = $cat.data("swiper");
+
     if (inst) {
       inst.allowSlideNext = enabled;
       inst.allowSlidePrev = enabled;
     }
+
+    $cat.find(SEL.next + "," + SEL.prev)
+      .attr("aria-disabled", enabled ? "false" : "true")
+      .attr("tabindex", enabled ? "0" : "-1");
   }
 
   $(ROOT + " " + SEL.categorySwitch).each(function () {
@@ -256,9 +275,90 @@ function initClient() {
     $(this).trigger("click");
   });
 
-  // -------------------------
-  // 3) EXERCISE LOCK
-  // -------------------------
+  // =========================================================
+  // 3) EXERCISE SWITCHING
+  // =========================================================
+
+  function switchExercise($cat, direction) {
+    if (!$cat.length || !isCategoryEnabled($cat)) return;
+
+    const inst = $cat.data("swiper");
+
+    if (!inst || inst.slides?.length <= 1) return;
+    if ($cat.data("exercise-switching")) return;
+
+    $cat
+      .data("exercise-switching", true)
+      .addClass(CLS.exerciseChanging);
+
+    window.setTimeout(() => {
+      // Category could theoretically be switched off during the fade.
+      if (!isCategoryEnabled($cat)) {
+        $cat
+          .removeClass(CLS.exerciseChanging)
+          .removeData("exercise-switching");
+
+        return;
+      }
+
+      if (direction === "next") inst.slideNext(0);
+      else inst.slidePrev(0);
+
+      // Give the new slide one painted frame at opacity 0,
+      // then allow it to fade back in.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          $cat.removeClass(CLS.exerciseChanging);
+
+          window.setTimeout(() => {
+            $cat.removeData("exercise-switching");
+          }, EXERCISE_FADE_IN_MS);
+        });
+      });
+    }, EXERCISE_FADE_OUT_MS);
+  }
+
+  $(document).on("click", ROOT + " " + SEL.next, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    switchExercise(
+      $(this).closest(".slider-category_component"),
+      "next"
+    );
+  });
+
+  $(document).on("click", ROOT + " " + SEL.prev, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    switchExercise(
+      $(this).closest(".slider-category_component"),
+      "prev"
+    );
+  });
+
+  $(document).on(
+    "keydown",
+    ROOT + " " + SEL.next + ", " + ROOT + " " + SEL.prev,
+    function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+
+      e.preventDefault();
+
+      const direction = $(this).is(SEL.next) ? "next" : "prev";
+
+      switchExercise(
+        $(this).closest(".slider-category_component"),
+        direction
+      );
+    }
+  );
+
+  // =========================================================
+  // 4) EXERCISE LOCK
+  // =========================================================
+
   function syncExerciseLock($lock, locked) {
     $lock
       .attr("role", "button")
@@ -302,9 +402,10 @@ function initClient() {
     $(this).trigger("click");
   });
 
-  // -------------------------
-  // 4) RANDOMIZE
-  // -------------------------
+  // =========================================================
+  // 5) RANDOMIZE
+  // =========================================================
+
   function shuffleArray(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -316,15 +417,16 @@ function initClient() {
 
   $(document).on("click", SEL.randomize, function (e) {
     e.preventDefault();
+
     if (Overlay.isOpen()) return;
 
     $(SEL.slider).each(function () {
       const $cat = $(this);
 
-      // Skip categories that are switched OFF.
+      // OFF categories do not participate.
       if (!isCategoryEnabled($cat)) return;
 
-      // If the currently selected exercise is locked, preserve this category.
+      // Preserve a category when its currently selected exercise is locked.
       const $activeCard = $cat
         .find(".swiper-slide.swiper-slide-active .move-category-box")
         .first();
@@ -332,14 +434,21 @@ function initClient() {
       if ($activeCard.hasClass(CLS.exerciseLocked)) return;
 
       const inst = $cat.data("swiper");
-      const $wrapper = $cat.find(SEL.swiper).first().find(".swiper-wrapper").first();
+      const $wrapper = $cat
+        .find(SEL.swiper)
+        .first()
+        .find(".swiper-wrapper")
+        .first();
 
       if (!$wrapper.length) return;
 
       const slides = Array.from($wrapper[0].children);
+
       if (slides.length <= 1) return;
 
-      shuffleArray(slides).forEach((slide) => $wrapper[0].appendChild(slide));
+      shuffleArray(slides).forEach((slide) => {
+        $wrapper[0].appendChild(slide);
+      });
 
       if (inst) {
         inst.update();
@@ -348,53 +457,79 @@ function initClient() {
     });
   });
 
-  // -------------------------
-  // 5) DEEPDIVE
-  // -------------------------
+  // =========================================================
+  // 6) DEEP DIVE
+  // =========================================================
+
   function populateDeepdiveFromCard($card) {
     const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
+
     setOverlayTitles(title);
 
     const $ddScene = Overlay.$ov.find(".exercise-scene.is-deepdive").first();
     const $body = $ddScene.find(SEL.ddBody).first();
     const $graphic = $ddScene.find(SEL.ddGraphic).first();
     const $chev = $ddScene.find(SEL.chevron).first();
-
     const $src = $card.find(SEL.hiddenSource).first();
     const $rt = $src.find(SEL.ddRichSrc).first();
 
-    if ($body.length) $body.html($rt.length ? $rt.html() : "");
+    if ($body.length) {
+      $body.html($rt.length ? $rt.html() : "");
+    }
 
     const $img = $src.find(SEL.ddImgSrc).first();
 
     if ($graphic.length) {
       $graphic.empty();
-      if ($img.length) $graphic.append(cloneImgFullRes($img[0]));
+
+      if ($img.length) {
+        $graphic.append(cloneImgFullRes($img[0]));
+      }
     }
 
-    if ($body.length) $body.addClass("is-shrinked").attr("aria-expanded", "false");
-    if ($chev.length) $chev.removeClass("is-rotated");
+    if ($body.length) {
+      $body
+        .addClass("is-shrinked")
+        .attr("aria-expanded", "false");
+    }
+
+    if ($chev.length) {
+      $chev.removeClass("is-rotated");
+    }
 
     const ovEl = Overlay.$ov[0];
+
     if (ovEl) ovEl.scrollTop = 0;
   }
 
   $(document).on("click", SEL.card, function (e) {
     if (
-      $(e.target).closest(
-        SEL.btnExecute + "," + SEL.exerciseLock + "," + SEL.next + "," + SEL.prev
-      ).length
+      $(e.target)
+        .closest(
+          SEL.btnExecute +
+            "," +
+            SEL.exerciseLock +
+            "," +
+            SEL.next +
+            "," +
+            SEL.prev
+        )
+        .length
     ) {
       return;
     }
 
     const $card = $(this).closest(".move-category-box");
+
     if (!$card.length) return;
 
     setCurrentFromCard($card);
 
     if ($executeOverlay.hasClass(CLS.executeOpen)) {
-      $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
+      $executeOverlay
+        .removeClass(CLS.executeOpen)
+        .attr("aria-hidden", "true");
+
       unloadPlayer();
     }
 
@@ -403,14 +538,23 @@ function initClient() {
   });
 
   function toggleDeepdiveBody($body) {
-    const isShrinked = $body.toggleClass("is-shrinked").hasClass("is-shrinked");
+    const isShrinked = $body
+      .toggleClass("is-shrinked")
+      .hasClass("is-shrinked");
 
-    $body.siblings(SEL.chevron).toggleClass("is-rotated", !isShrinked);
-    $body.attr("aria-expanded", isShrinked ? "false" : "true");
+    $body
+      .siblings(SEL.chevron)
+      .toggleClass("is-rotated", !isShrinked);
+
+    $body.attr(
+      "aria-expanded",
+      isShrinked ? "false" : "true"
+    );
   }
 
   $(document).on("click", SEL.overlay + " " + SEL.ddBody, function (e) {
     if ($(e.target).closest("a, button, [data-no-toggle]").length) return;
+
     toggleDeepdiveBody($(this));
   });
 
@@ -418,12 +562,14 @@ function initClient() {
     e.preventDefault();
 
     const $body = $(this).siblings(SEL.ddBody);
+
     if ($body.length) toggleDeepdiveBody($body);
   });
 
-  // -------------------------
-  // 6) EXECUTE
-  // -------------------------
+  // =========================================================
+  // 7) EXECUTE
+  // =========================================================
+
   const $executeOverlay = $(SEL.executeOverlay);
   const $mount = $(SEL.executeMount);
   const $dose = $(SEL.executeDose);
@@ -438,12 +584,17 @@ function initClient() {
   const $btnFullscreen = $(SEL.executeFullscreen);
 
   const LS_KEY = "execute_fitfill_portrait";
+
   let player = null;
 
-  $(ROOT).find(".execute-button .noise-block").css("pointer-events", "none");
+  $(ROOT)
+    .find(".execute-button .noise-block")
+    .css("pointer-events", "none");
 
   function isMobilePortrait() {
-    return window.matchMedia("(max-width: 767px) and (orientation: portrait)").matches;
+    return window
+      .matchMedia("(max-width: 767px) and (orientation: portrait)")
+      .matches;
   }
 
   function getSavedFitFill() {
@@ -455,8 +606,7 @@ function initClient() {
   }
 
   function setFitFillUI(mode) {
-    const portrait = isMobilePortrait();
-    const m = portrait ? mode : "fit";
+    const m = isMobilePortrait() ? mode : "fit";
 
     $btnFit.toggleClass("is-active", m === "fit");
     $btnFill.toggleClass("is-active", m === "fill");
@@ -495,28 +645,34 @@ function initClient() {
   $btnFit.on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
+
     applyFitFill("fit");
   });
 
   $btnFill.on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
+
     applyFitFill("fill");
   });
 
   (function preconnectVimeo() {
     if (document.querySelector("link[data-preconnect-vimeo]")) return;
 
-    ["https://player.vimeo.com", "https://i.vimeocdn.com", "https://f.vimeocdn.com"].forEach(
-      (href) => {
-        const link = document.createElement("link");
-        link.rel = "preconnect";
-        link.href = href;
-        link.crossOrigin = "anonymous";
-        link.setAttribute("data-preconnect-vimeo", "1");
-        document.head.appendChild(link);
-      }
-    );
+    [
+      "https://player.vimeo.com",
+      "https://i.vimeocdn.com",
+      "https://f.vimeocdn.com",
+    ].forEach((href) => {
+      const link = document.createElement("link");
+
+      link.rel = "preconnect";
+      link.href = href;
+      link.crossOrigin = "anonymous";
+
+      link.setAttribute("data-preconnect-vimeo", "1");
+      document.head.appendChild(link);
+    });
   })();
 
   function wrapIndex(i, total) {
@@ -546,15 +702,17 @@ function initClient() {
 
   function getActiveCardInCategory(catIndex) {
     const $cat = $(SEL.slider).eq(catIndex);
-    const $activeSlide = $cat.find(".swiper-slide.swiper-slide-active").first();
+    const $activeSlide = $cat
+      .find(".swiper-slide.swiper-slide-active")
+      .first();
 
-    return $activeSlide.find(".move-category-box").first();
+    return $activeSlide
+      .find(".move-category-box")
+      .first();
   }
 
   async function loadCard($card) {
     const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
-    setOverlayTitles(title);
-
     const doseTxt = ($card.attr("data-ex-dose") || "").trim();
     const cue1Txt = ($card.attr("data-ex-cue1") || "").trim();
     const cue2Txt = ($card.attr("data-ex-cue2") || "").trim();
@@ -562,14 +720,19 @@ function initClient() {
     const cue4Txt = ($card.attr("data-ex-cue4") || "").trim();
     const vimeoUrl = ($card.attr("data-ex-vimeo-url") || "").trim();
 
+    setOverlayTitles(title);
+
     $dose.text(doseTxt);
     $cue1.text(cue1Txt).toggle(!!cue1Txt);
     $cue2.text(cue2Txt).toggle(!!cue2Txt);
-    $cue3.text(cue3Txt || cue4Txt).toggle(!!(cue3Txt || cue4Txt));
+    $cue3
+      .text(cue3Txt || cue4Txt)
+      .toggle(!!(cue3Txt || cue4Txt));
 
     unloadPlayer();
 
     const vimeoId = extractVimeoId(vimeoUrl);
+
     if (!vimeoId) return;
 
     const iframe = document.createElement("iframe");
@@ -587,7 +750,12 @@ function initClient() {
     }).toString();
 
     iframe.src = url.toString();
-    iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture");
+
+    iframe.setAttribute(
+      "allow",
+      "autoplay; fullscreen; picture-in-picture"
+    );
+
     iframe.setAttribute("allowfullscreen", "");
 
     $mount.empty().append(iframe);
@@ -611,7 +779,9 @@ function initClient() {
     const indexes = [];
 
     $(SEL.slider).each(function (index) {
-      if (isCategoryEnabled($(this))) indexes.push(index);
+      if (isCategoryEnabled($(this))) {
+        indexes.push(index);
+      }
     });
 
     return indexes;
@@ -620,15 +790,21 @@ function initClient() {
   function isLastCategory(catIndex) {
     if (executeMode === "session") {
       const enabled = getEnabledCategoryIndexes();
-      return enabled.length > 0 && catIndex === enabled[enabled.length - 1];
+
+      return (
+        enabled.length > 0 &&
+        catIndex === enabled[enabled.length - 1]
+      );
     }
 
     const total = totalCategories();
+
     return total > 0 && catIndex === total - 1;
   }
 
   function setProgressUI(catIndex) {
     const $fill = $(SEL.progressFill);
+
     if (!$fill.length) return;
 
     if (executeMode === "session") {
@@ -641,7 +817,9 @@ function initClient() {
 
       const position = enabled.indexOf(catIndex);
       const safePosition = position >= 0 ? position : 0;
-      const pct = Math.round(((safePosition + 1) / enabled.length) * 100);
+      const pct = Math.round(
+        ((safePosition + 1) / enabled.length) * 100
+      );
 
       $fill.css("width", pct + "%");
       return;
@@ -672,21 +850,32 @@ function initClient() {
       return;
     }
 
-    if (isLastCategory(currentCatIndex)) setNextComplete();
-    else setNextNormal();
+    if (isLastCategory(currentCatIndex)) {
+      setNextComplete();
+    } else {
+      setNextNormal();
+    }
   }
 
   function openExecuteForCategory(catIndex) {
     const total = totalCategories();
+
     if (!total) return;
 
     if (executeMode === "session") {
       const enabled = getEnabledCategoryIndexes();
+
       if (!enabled.length) return;
 
       if (!enabled.includes(catIndex)) {
-        const nextEnabled = enabled.find((index) => index >= catIndex);
-        catIndex = nextEnabled !== undefined ? nextEnabled : enabled[0];
+        const nextEnabled = enabled.find(
+          (index) => index >= catIndex
+        );
+
+        catIndex =
+          nextEnabled !== undefined
+            ? nextEnabled
+            : enabled[0];
       }
 
       currentCatIndex = catIndex;
@@ -695,12 +884,16 @@ function initClient() {
     }
 
     const $card = getActiveCardInCategory(currentCatIndex);
+
     if (!$card.length) return;
 
     currentCard = $card;
 
     Overlay.open("execute");
-    $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
+
+    $executeOverlay
+      .addClass(CLS.executeOpen)
+      .attr("aria-hidden", "false");
 
     syncFitFillForViewport();
     setProgressUI(currentCatIndex);
@@ -708,24 +901,32 @@ function initClient() {
     loadCard($card);
   }
 
-  $(document).on("click", SEL.card + " " + SEL.btnExecute, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    SEL.card + " " + SEL.btnExecute,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const $card = $(this).closest(".move-category-box");
-    if (!$card.length) return;
+      const $card = $(this).closest(".move-category-box");
 
-    executeMode = "preview";
-    setCurrentFromCard($card);
+      if (!$card.length) return;
 
-    Overlay.open("execute");
-    $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
+      executeMode = "preview";
 
-    syncFitFillForViewport();
-    setProgressUI(currentCatIndex);
-    syncNextState();
-    loadCard($card);
-  });
+      setCurrentFromCard($card);
+      Overlay.open("execute");
+
+      $executeOverlay
+        .addClass(CLS.executeOpen)
+        .attr("aria-hidden", "false");
+
+      syncFitFillForViewport();
+      setProgressUI(currentCatIndex);
+      syncNextState();
+      loadCard($card);
+    }
+  );
 
   $(document).on("click", SEL.startButton, function (e) {
     e.preventDefault();
@@ -734,6 +935,7 @@ function initClient() {
     if (Overlay.isOpen()) return;
 
     const enabled = getEnabledCategoryIndexes();
+
     if (!enabled.length) return;
 
     executeMode = "session";
@@ -747,6 +949,7 @@ function initClient() {
 
   function goBack() {
     const total = totalCategories();
+
     if (!total) return;
 
     if (executeMode === "session") {
@@ -767,6 +970,7 @@ function initClient() {
 
   function goNext() {
     const total = totalCategories();
+
     if (!total) return;
 
     if ($btnNext.attr("data-state") === "complete") return;
@@ -775,7 +979,10 @@ function initClient() {
       const enabled = getEnabledCategoryIndexes();
       const position = enabled.indexOf(currentCatIndex);
 
-      if (position < 0 || position >= enabled.length - 1) {
+      if (
+        position < 0 ||
+        position >= enabled.length - 1
+      ) {
         setNextComplete();
         return;
       }
@@ -799,10 +1006,10 @@ function initClient() {
 
   function bindDivButtonA11y($el, onActivate) {
     $el.on("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onActivate();
-      }
+      if (e.key !== "Enter" && e.key !== " ") return;
+
+      e.preventDefault();
+      onActivate();
     });
   }
 
@@ -822,6 +1029,7 @@ function initClient() {
 
     if (action === "repeat") {
       const enabled = getEnabledCategoryIndexes();
+
       if (!enabled.length) return;
 
       executeMode = "session";
@@ -839,7 +1047,9 @@ function initClient() {
   });
 
   $executeOverlay.on("click", function (e) {
-    if (e.target === this) closeAll();
+    if (e.target === this) {
+      closeAll();
+    }
   });
 
   $btnFullscreen.on("click", async function (e) {
@@ -847,32 +1057,50 @@ function initClient() {
     e.stopPropagation();
 
     try {
-      if (player) await player.requestFullscreen();
+      if (player) {
+        await player.requestFullscreen();
+      }
     } catch (err) {
-      const iframe = document.querySelector("#executeVimeoMount iframe");
-      if (iframe?.requestFullscreen) iframe.requestFullscreen();
+      const iframe = document.querySelector(
+        "#executeVimeoMount iframe"
+      );
+
+      if (iframe?.requestFullscreen) {
+        iframe.requestFullscreen();
+      }
     }
   });
 
-  // -------------------------
-  // 6b) MODE TOGGLE
-  // -------------------------
+  // =========================================================
+  // 8) MODE TOGGLE
+  // =========================================================
+
   $(document).on("click", SEL.overlayToggle, function (e) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!Overlay.isOpen() || !currentCard || !currentCard.length) return;
+    if (
+      !Overlay.isOpen() ||
+      !currentCard ||
+      !currentCard.length
+    ) {
+      return;
+    }
 
     const active = Overlay.activeScene();
 
     if (active === "execute") {
       if ($executeOverlay.hasClass(CLS.executeOpen)) {
-        $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
+        $executeOverlay
+          .removeClass(CLS.executeOpen)
+          .attr("aria-hidden", "true");
+
         unloadPlayer();
       }
 
       populateDeepdiveFromCard(currentCard);
       Overlay.open("deepdive");
+
       return;
     }
 
@@ -880,7 +1108,10 @@ function initClient() {
       setCurrentFromCard(currentCard);
 
       Overlay.open("execute");
-      $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
+
+      $executeOverlay
+        .addClass(CLS.executeOpen)
+        .attr("aria-hidden", "false");
 
       syncFitFillForViewport();
       setProgressUI(currentCatIndex);
@@ -889,23 +1120,32 @@ function initClient() {
     }
   });
 
-  // -------------------------
-  // 7) CLOSE ALL + ESC
-  // -------------------------
+  // =========================================================
+  // 9) CLOSE + ESC
+  // =========================================================
+
   function closeAll() {
     if ($executeOverlay.hasClass(CLS.executeOpen)) {
-      $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
+      $executeOverlay
+        .removeClass(CLS.executeOpen)
+        .attr("aria-hidden", "true");
+
       unloadPlayer();
     }
 
     Overlay.close();
+
     executeMode = "preview";
     setNextNormal();
   }
 
   $(document).on("keydown", function (e) {
-    if (e.key !== "Escape") return;
-    if (!Overlay.isOpen()) return;
+    if (
+      e.key !== "Escape" ||
+      !Overlay.isOpen()
+    ) {
+      return;
+    }
 
     closeAll();
   });
@@ -919,6 +1159,10 @@ function initClient() {
   initHowToOverlay();
   initHowToScroll();
 }
+
+// ===========================================================
+// HOW-TO OVERLAY
+// ===========================================================
 
 function initHowToOverlay() {
   const overlay = document.querySelector(".howto-overlay");
@@ -946,6 +1190,10 @@ function initHowToOverlay() {
   });
 }
 
+// ===========================================================
+// HOW-TO SCROLL
+// ===========================================================
+
 function initHowToScroll() {
   const scrollContainer = document.getElementById("howto-scroll");
   const topbar = document.getElementById("howto-topbar");
@@ -965,11 +1213,16 @@ function initHowToScroll() {
       const containerTop = scrollContainer.getBoundingClientRect().top;
       const targetTop = targetEl.getBoundingClientRect().top;
       const currentScroll = scrollContainer.scrollTop;
+      const topbarHeight = topbar
+        ? topbar.getBoundingClientRect().height
+        : 0;
 
-      const topbarHeight = topbar ? topbar.getBoundingClientRect().height : 0;
-      const extraGap = 12;
-
-      const offset = targetTop - containerTop + currentScroll - topbarHeight - extraGap;
+      const offset =
+        targetTop -
+        containerTop +
+        currentScroll -
+        topbarHeight -
+        12;
 
       scrollContainer.scrollTo({
         top: offset,
