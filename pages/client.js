@@ -222,7 +222,6 @@ function initClient() {
     $cat.attr("data-enabled", enabled ? "true" : "false");
 
     const inst = $cat.data("swiper");
-
     if (inst) {
       inst.allowSlideNext = enabled;
       inst.allowSlidePrev = enabled;
@@ -317,7 +316,6 @@ function initClient() {
 
   $(document).on("click", SEL.randomize, function (e) {
     e.preventDefault();
-
     if (Overlay.isOpen()) return;
 
     $(SEL.slider).each(function () {
@@ -326,8 +324,7 @@ function initClient() {
       // Skip categories that are switched OFF.
       if (!isCategoryEnabled($cat)) return;
 
-      // If the currently selected exercise is locked,
-      // preserve this category.
+      // If the currently selected exercise is locked, preserve this category.
       const $activeCard = $cat
         .find(".swiper-slide.swiper-slide-active .move-category-box")
         .first();
@@ -335,22 +332,14 @@ function initClient() {
       if ($activeCard.hasClass(CLS.exerciseLocked)) return;
 
       const inst = $cat.data("swiper");
-
-      const $wrapper = $cat
-        .find(SEL.swiper)
-        .first()
-        .find(".swiper-wrapper")
-        .first();
+      const $wrapper = $cat.find(SEL.swiper).first().find(".swiper-wrapper").first();
 
       if (!$wrapper.length) return;
 
       const slides = Array.from($wrapper[0].children);
-
       if (slides.length <= 1) return;
 
-      shuffleArray(slides).forEach((slide) => {
-        $wrapper[0].appendChild(slide);
-      });
+      shuffleArray(slides).forEach((slide) => $wrapper[0].appendChild(slide));
 
       if (inst) {
         inst.update();
@@ -364,13 +353,9 @@ function initClient() {
   // -------------------------
   function populateDeepdiveFromCard($card) {
     const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
-
     setOverlayTitles(title);
 
-    const $ddScene = Overlay.$ov
-      .find(".exercise-scene.is-deepdive")
-      .first();
-
+    const $ddScene = Overlay.$ov.find(".exercise-scene.is-deepdive").first();
     const $body = $ddScene.find(SEL.ddBody).first();
     const $graphic = $ddScene.find(SEL.ddGraphic).first();
     const $chev = $ddScene.find(SEL.chevron).first();
@@ -378,65 +363,38 @@ function initClient() {
     const $src = $card.find(SEL.hiddenSource).first();
     const $rt = $src.find(SEL.ddRichSrc).first();
 
-    if ($body.length) {
-      $body.html($rt.length ? $rt.html() : "");
-    }
+    if ($body.length) $body.html($rt.length ? $rt.html() : "");
 
     const $img = $src.find(SEL.ddImgSrc).first();
 
     if ($graphic.length) {
       $graphic.empty();
-
-      if ($img.length) {
-        $graphic.append(cloneImgFullRes($img[0]));
-      }
+      if ($img.length) $graphic.append(cloneImgFullRes($img[0]));
     }
 
-    if ($body.length) {
-      $body
-        .addClass("is-shrinked")
-        .attr("aria-expanded", "false");
-    }
-
-    if ($chev.length) {
-      $chev.removeClass("is-rotated");
-    }
+    if ($body.length) $body.addClass("is-shrinked").attr("aria-expanded", "false");
+    if ($chev.length) $chev.removeClass("is-rotated");
 
     const ovEl = Overlay.$ov[0];
-
-    if (ovEl) {
-      ovEl.scrollTop = 0;
-    }
+    if (ovEl) ovEl.scrollTop = 0;
   }
 
   $(document).on("click", SEL.card, function (e) {
     if (
-      $(e.target)
-        .closest(
-          SEL.btnExecute +
-            "," +
-            SEL.exerciseLock +
-            "," +
-            SEL.next +
-            "," +
-            SEL.prev
-        )
-        .length
+      $(e.target).closest(
+        SEL.btnExecute + "," + SEL.exerciseLock + "," + SEL.next + "," + SEL.prev
+      ).length
     ) {
       return;
     }
 
     const $card = $(this).closest(".move-category-box");
-
     if (!$card.length) return;
 
     setCurrentFromCard($card);
 
     if ($executeOverlay.hasClass(CLS.executeOpen)) {
-      $executeOverlay
-        .removeClass(CLS.executeOpen)
-        .attr("aria-hidden", "true");
-
+      $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
       unloadPlayer();
     }
 
@@ -445,49 +403,23 @@ function initClient() {
   });
 
   function toggleDeepdiveBody($body) {
-    const isShrinked = $body
-      .toggleClass("is-shrinked")
-      .hasClass("is-shrinked");
+    const isShrinked = $body.toggleClass("is-shrinked").hasClass("is-shrinked");
 
-    $body
-      .siblings(SEL.chevron)
-      .toggleClass("is-rotated", !isShrinked);
-
-    $body.attr(
-      "aria-expanded",
-      isShrinked ? "false" : "true"
-    );
+    $body.siblings(SEL.chevron).toggleClass("is-rotated", !isShrinked);
+    $body.attr("aria-expanded", isShrinked ? "false" : "true");
   }
 
-  $(document).on(
-    "click",
-    SEL.overlay + " " + SEL.ddBody,
-    function (e) {
-      if (
-        $(e.target)
-          .closest("a, button, [data-no-toggle]")
-          .length
-      ) {
-        return;
-      }
+  $(document).on("click", SEL.overlay + " " + SEL.ddBody, function (e) {
+    if ($(e.target).closest("a, button, [data-no-toggle]").length) return;
+    toggleDeepdiveBody($(this));
+  });
 
-      toggleDeepdiveBody($(this));
-    }
-  );
+  $(document).on("click", SEL.overlay + " " + SEL.chevron, function (e) {
+    e.preventDefault();
 
-  $(document).on(
-    "click",
-    SEL.overlay + " " + SEL.chevron,
-    function (e) {
-      e.preventDefault();
-
-      const $body = $(this).siblings(SEL.ddBody);
-
-      if ($body.length) {
-        toggleDeepdiveBody($body);
-      }
-    }
-  );
+    const $body = $(this).siblings(SEL.ddBody);
+    if ($body.length) toggleDeepdiveBody($body);
+  });
 
   // -------------------------
   // 6) EXECUTE
@@ -506,19 +438,12 @@ function initClient() {
   const $btnFullscreen = $(SEL.executeFullscreen);
 
   const LS_KEY = "execute_fitfill_portrait";
-
   let player = null;
 
-  $(ROOT)
-    .find(".execute-button .noise-block")
-    .css("pointer-events", "none");
+  $(ROOT).find(".execute-button .noise-block").css("pointer-events", "none");
 
   function isMobilePortrait() {
-    return window
-      .matchMedia(
-        "(max-width: 767px) and (orientation: portrait)"
-      )
-      .matches;
+    return window.matchMedia("(max-width: 767px) and (orientation: portrait)").matches;
   }
 
   function getSavedFitFill() {
@@ -542,20 +467,16 @@ function initClient() {
       localStorage.setItem(LS_KEY, mode);
     } catch (e) {}
 
-    const isFill =
-      isMobilePortrait() && mode === "fill";
+    const isFill = isMobilePortrait() && mode === "fill";
 
     $executeOverlay.toggleClass("is-fill", isFill);
-
     setFitFillUI(mode);
   }
 
   function syncFitFillForViewport() {
     if (!isMobilePortrait()) {
       $executeOverlay.removeClass("is-fill");
-
       setFitFillUI("fit");
-
       return;
     }
 
@@ -566,60 +487,36 @@ function initClient() {
 
   let fitFillTimer = null;
 
-  $(window).on(
-    "resize orientationchange",
-    function () {
-      clearTimeout(fitFillTimer);
-
-      fitFillTimer = setTimeout(
-        syncFitFillForViewport,
-        80
-      );
-    }
-  );
+  $(window).on("resize orientationchange", function () {
+    clearTimeout(fitFillTimer);
+    fitFillTimer = setTimeout(syncFitFillForViewport, 80);
+  });
 
   $btnFit.on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
-
     applyFitFill("fit");
   });
 
   $btnFill.on("click", function (e) {
     e.preventDefault();
     e.stopPropagation();
-
     applyFitFill("fill");
   });
 
   (function preconnectVimeo() {
-    if (
-      document.querySelector(
-        "link[data-preconnect-vimeo]"
-      )
-    ) {
-      return;
-    }
+    if (document.querySelector("link[data-preconnect-vimeo]")) return;
 
-    [
-      "https://player.vimeo.com",
-      "https://i.vimeocdn.com",
-      "https://f.vimeocdn.com",
-    ].forEach((href) => {
-      const link =
-        document.createElement("link");
-
-      link.rel = "preconnect";
-      link.href = href;
-      link.crossOrigin = "anonymous";
-
-      link.setAttribute(
-        "data-preconnect-vimeo",
-        "1"
-      );
-
-      document.head.appendChild(link);
-    });
+    ["https://player.vimeo.com", "https://i.vimeocdn.com", "https://f.vimeocdn.com"].forEach(
+      (href) => {
+        const link = document.createElement("link");
+        link.rel = "preconnect";
+        link.href = href;
+        link.crossOrigin = "anonymous";
+        link.setAttribute("data-preconnect-vimeo", "1");
+        document.head.appendChild(link);
+      }
+    );
   })();
 
   function wrapIndex(i, total) {
@@ -634,7 +531,6 @@ function initClient() {
     }
 
     player = null;
-
     $mount.empty();
   }
 
@@ -642,88 +538,42 @@ function initClient() {
     if (!url) return null;
 
     const match =
-      url.match(
-        /player\.vimeo\.com\/video\/(\d+)/
-      ) ||
-      url.match(
-        /vimeo\.com\/(?:video\/)?(\d+)/
-      );
+      url.match(/player\.vimeo\.com\/video\/(\d+)/) ||
+      url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
 
     return match ? match[1] : null;
   }
 
   function getActiveCardInCategory(catIndex) {
     const $cat = $(SEL.slider).eq(catIndex);
+    const $activeSlide = $cat.find(".swiper-slide.swiper-slide-active").first();
 
-    const $activeSlide = $cat
-      .find(
-        ".swiper-slide.swiper-slide-active"
-      )
-      .first();
-
-    return $activeSlide
-      .find(".move-category-box")
-      .first();
+    return $activeSlide.find(".move-category-box").first();
   }
 
   async function loadCard($card) {
-    const title =
-      ($card.attr("data-ex-title") || "")
-        .trim() || "Exercise";
-
+    const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
     setOverlayTitles(title);
 
-    const doseTxt =
-      ($card.attr("data-ex-dose") || "")
-        .trim();
-
-    const cue1Txt =
-      ($card.attr("data-ex-cue1") || "")
-        .trim();
-
-    const cue2Txt =
-      ($card.attr("data-ex-cue2") || "")
-        .trim();
-
-    const cue3Txt =
-      ($card.attr("data-ex-cue3") || "")
-        .trim();
-
-    const cue4Txt =
-      ($card.attr("data-ex-cue4") || "")
-        .trim();
-
-    const vimeoUrl =
-      ($card.attr("data-ex-vimeo-url") || "")
-        .trim();
+    const doseTxt = ($card.attr("data-ex-dose") || "").trim();
+    const cue1Txt = ($card.attr("data-ex-cue1") || "").trim();
+    const cue2Txt = ($card.attr("data-ex-cue2") || "").trim();
+    const cue3Txt = ($card.attr("data-ex-cue3") || "").trim();
+    const cue4Txt = ($card.attr("data-ex-cue4") || "").trim();
+    const vimeoUrl = ($card.attr("data-ex-vimeo-url") || "").trim();
 
     $dose.text(doseTxt);
-
-    $cue1
-      .text(cue1Txt)
-      .toggle(!!cue1Txt);
-
-    $cue2
-      .text(cue2Txt)
-      .toggle(!!cue2Txt);
-
-    $cue3
-      .text(cue3Txt || cue4Txt)
-      .toggle(!!(cue3Txt || cue4Txt));
+    $cue1.text(cue1Txt).toggle(!!cue1Txt);
+    $cue2.text(cue2Txt).toggle(!!cue2Txt);
+    $cue3.text(cue3Txt || cue4Txt).toggle(!!(cue3Txt || cue4Txt));
 
     unloadPlayer();
 
-    const vimeoId =
-      extractVimeoId(vimeoUrl);
-
+    const vimeoId = extractVimeoId(vimeoUrl);
     if (!vimeoId) return;
 
-    const iframe =
-      document.createElement("iframe");
-
-    const url = new URL(
-      `https://player.vimeo.com/video/${vimeoId}`
-    );
+    const iframe = document.createElement("iframe");
+    const url = new URL(`https://player.vimeo.com/video/${vimeoId}`);
 
     url.search = new URLSearchParams({
       autoplay: "1",
@@ -737,25 +587,13 @@ function initClient() {
     }).toString();
 
     iframe.src = url.toString();
-
-    iframe.setAttribute(
-      "allow",
-      "autoplay; fullscreen; picture-in-picture"
-    );
-
-    iframe.setAttribute(
-      "allowfullscreen",
-      ""
-    );
+    iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture");
+    iframe.setAttribute("allowfullscreen", "");
 
     $mount.empty().append(iframe);
 
-    if (
-      typeof Vimeo !== "undefined" &&
-      Vimeo.Player
-    ) {
-      player =
-        new Vimeo.Player(iframe);
+    if (typeof Vimeo !== "undefined" && Vimeo.Player) {
+      player = new Vimeo.Player(iframe);
 
       try {
         await player.setMuted(true);
@@ -772,124 +610,60 @@ function initClient() {
   function getEnabledCategoryIndexes() {
     const indexes = [];
 
-    $(SEL.slider).each(
-      function (index) {
-        if (
-          isCategoryEnabled($(this))
-        ) {
-          indexes.push(index);
-        }
-      }
-    );
+    $(SEL.slider).each(function (index) {
+      if (isCategoryEnabled($(this))) indexes.push(index);
+    });
 
     return indexes;
   }
 
   function isLastCategory(catIndex) {
     if (executeMode === "session") {
-      const enabled =
-        getEnabledCategoryIndexes();
-
-      return (
-        enabled.length > 0 &&
-        catIndex ===
-          enabled[enabled.length - 1]
-      );
+      const enabled = getEnabledCategoryIndexes();
+      return enabled.length > 0 && catIndex === enabled[enabled.length - 1];
     }
 
-    const total =
-      totalCategories();
-
-    return (
-      total > 0 &&
-      catIndex === total - 1
-    );
+    const total = totalCategories();
+    return total > 0 && catIndex === total - 1;
   }
 
   function setProgressUI(catIndex) {
-    const $fill =
-      $(SEL.progressFill);
-
+    const $fill = $(SEL.progressFill);
     if (!$fill.length) return;
 
     if (executeMode === "session") {
-      const enabled =
-        getEnabledCategoryIndexes();
+      const enabled = getEnabledCategoryIndexes();
 
       if (!enabled.length) {
         $fill.css("width", "0%");
         return;
       }
 
-      const position =
-        enabled.indexOf(catIndex);
+      const position = enabled.indexOf(catIndex);
+      const safePosition = position >= 0 ? position : 0;
+      const pct = Math.round(((safePosition + 1) / enabled.length) * 100);
 
-      const safePosition =
-        position >= 0 ? position : 0;
-
-      const pct = Math.round(
-        ((safePosition + 1) /
-          enabled.length) *
-          100
-      );
-
-      $fill.css(
-        "width",
-        pct + "%"
-      );
-
+      $fill.css("width", pct + "%");
       return;
     }
 
-    const total =
-      totalCategories() || 1;
+    const total = totalCategories() || 1;
+    const idx = Math.max(0, Math.min(catIndex, total - 1));
+    const pct = Math.round(((idx + 1) / total) * 100);
 
-    const idx = Math.max(
-      0,
-      Math.min(
-        catIndex,
-        total - 1
-      )
-    );
-
-    const pct = Math.round(
-      ((idx + 1) / total) * 100
-    );
-
-    $fill.css(
-      "width",
-      pct + "%"
-    );
+    $fill.css("width", pct + "%");
   }
 
   function setNextNormal() {
-    $btnNext.attr(
-      "data-state",
-      "next"
-    );
-
-    $btnNext
-      .find(SEL.nextLabel)
-      .css("display", "");
-
-    $btnNext
-      .find(SEL.nextComplete)
-      .css("display", "none");
+    $btnNext.attr("data-state", "next");
+    $btnNext.find(SEL.nextLabel).css("display", "");
+    $btnNext.find(SEL.nextComplete).css("display", "none");
   }
 
   function setNextComplete() {
-    $btnNext.attr(
-      "data-state",
-      "complete"
-    );
-
-    $btnNext
-      .find(SEL.nextLabel)
-      .css("display", "none");
-
-    $btnNext
-      .find(SEL.nextComplete)
-      .css("display", "flex");
+    $btnNext.attr("data-state", "complete");
+    $btnNext.find(SEL.nextLabel).css("display", "none");
+    $btnNext.find(SEL.nextComplete).css("display", "flex");
   }
 
   function syncNextState() {
@@ -898,537 +672,248 @@ function initClient() {
       return;
     }
 
-    if (
-      isLastCategory(
-        currentCatIndex
-      )
-    ) {
-      setNextComplete();
-    } else {
-      setNextNormal();
-    }
+    if (isLastCategory(currentCatIndex)) setNextComplete();
+    else setNextNormal();
   }
 
-  function openExecuteForCategory(
-    catIndex
-  ) {
-    const total =
-      totalCategories();
-
+  function openExecuteForCategory(catIndex) {
+    const total = totalCategories();
     if (!total) return;
 
-    if (
-      executeMode === "session"
-    ) {
-      const enabled =
-        getEnabledCategoryIndexes();
-
+    if (executeMode === "session") {
+      const enabled = getEnabledCategoryIndexes();
       if (!enabled.length) return;
 
-      if (
-        !enabled.includes(catIndex)
-      ) {
-        const nextEnabled =
-          enabled.find(
-            (index) =>
-              index >= catIndex
-          );
-
-        catIndex =
-          nextEnabled !== undefined
-            ? nextEnabled
-            : enabled[0];
+      if (!enabled.includes(catIndex)) {
+        const nextEnabled = enabled.find((index) => index >= catIndex);
+        catIndex = nextEnabled !== undefined ? nextEnabled : enabled[0];
       }
 
-      currentCatIndex =
-        catIndex;
+      currentCatIndex = catIndex;
     } else {
-      currentCatIndex =
-        wrapIndex(
-          catIndex,
-          total
-        );
+      currentCatIndex = wrapIndex(catIndex, total);
     }
 
-    const $card =
-      getActiveCardInCategory(
-        currentCatIndex
-      );
-
+    const $card = getActiveCardInCategory(currentCatIndex);
     if (!$card.length) return;
 
     currentCard = $card;
 
     Overlay.open("execute");
-
-    $executeOverlay
-      .addClass(
-        CLS.executeOpen
-      )
-      .attr(
-        "aria-hidden",
-        "false"
-      );
+    $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
 
     syncFitFillForViewport();
-
-    setProgressUI(
-      currentCatIndex
-    );
-
+    setProgressUI(currentCatIndex);
     syncNextState();
-
     loadCard($card);
   }
 
-  $(document).on(
-    "click",
-    SEL.card +
-      " " +
-      SEL.btnExecute,
-    function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  $(document).on("click", SEL.card + " " + SEL.btnExecute, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-      const $card = $(this)
-        .closest(
-          ".move-category-box"
-        );
+    const $card = $(this).closest(".move-category-box");
+    if (!$card.length) return;
 
-      if (!$card.length) return;
+    executeMode = "preview";
+    setCurrentFromCard($card);
 
-      executeMode = "preview";
+    Overlay.open("execute");
+    $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
 
-      setCurrentFromCard($card);
+    syncFitFillForViewport();
+    setProgressUI(currentCatIndex);
+    syncNextState();
+    loadCard($card);
+  });
 
-      Overlay.open("execute");
+  $(document).on("click", SEL.startButton, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-      $executeOverlay
-        .addClass(
-          CLS.executeOpen
-        )
-        .attr(
-          "aria-hidden",
-          "false"
-        );
+    if (Overlay.isOpen()) return;
 
-      syncFitFillForViewport();
+    const enabled = getEnabledCategoryIndexes();
+    if (!enabled.length) return;
 
-      setProgressUI(
-        currentCatIndex
-      );
+    executeMode = "session";
+    openExecuteForCategory(enabled[0]);
+  });
 
-      syncNextState();
-
-      loadCard($card);
-    }
-  );
-
-  $(document).on(
-    "click",
-    SEL.startButton,
-    function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (Overlay.isOpen()) {
-        return;
-      }
-
-      const enabled =
-        getEnabledCategoryIndexes();
-
-      if (!enabled.length) {
-        return;
-      }
-
-      executeMode = "session";
-
-      openExecuteForCategory(
-        enabled[0]
-      );
-    }
-  );
-
-  $btnClose.on(
-    "click",
-    function (e) {
-      e.preventDefault();
-
-      closeAll();
-    }
-  );
+  $btnClose.on("click", function (e) {
+    e.preventDefault();
+    closeAll();
+  });
 
   function goBack() {
-    const total =
-      totalCategories();
-
+    const total = totalCategories();
     if (!total) return;
 
-    if (
-      executeMode === "session"
-    ) {
-      const enabled =
-        getEnabledCategoryIndexes();
-
-      const position =
-        enabled.indexOf(
-          currentCatIndex
-        );
+    if (executeMode === "session") {
+      const enabled = getEnabledCategoryIndexes();
+      const position = enabled.indexOf(currentCatIndex);
 
       if (position <= 0) {
         closeAll();
         return;
       }
 
-      openExecuteForCategory(
-        enabled[position - 1]
-      );
-
+      openExecuteForCategory(enabled[position - 1]);
       return;
     }
 
-    openExecuteForCategory(
-      currentCatIndex - 1
-    );
+    openExecuteForCategory(currentCatIndex - 1);
   }
 
   function goNext() {
-    const total =
-      totalCategories();
-
+    const total = totalCategories();
     if (!total) return;
 
-    if (
-      $btnNext.attr(
-        "data-state"
-      ) === "complete"
-    ) {
-      return;
-    }
+    if ($btnNext.attr("data-state") === "complete") return;
 
-    if (
-      executeMode === "session"
-    ) {
-      const enabled =
-        getEnabledCategoryIndexes();
+    if (executeMode === "session") {
+      const enabled = getEnabledCategoryIndexes();
+      const position = enabled.indexOf(currentCatIndex);
 
-      const position =
-        enabled.indexOf(
-          currentCatIndex
-        );
-
-      if (
-        position < 0 ||
-        position >=
-          enabled.length - 1
-      ) {
+      if (position < 0 || position >= enabled.length - 1) {
         setNextComplete();
         return;
       }
 
-      openExecuteForCategory(
-        enabled[position + 1]
-      );
-
+      openExecuteForCategory(enabled[position + 1]);
       return;
     }
 
-    openExecuteForCategory(
-      currentCatIndex + 1
-    );
+    openExecuteForCategory(currentCatIndex + 1);
   }
 
-  $btnBack.on(
-    "click",
-    function (e) {
-      e.preventDefault();
+  $btnBack.on("click", function (e) {
+    e.preventDefault();
+    goBack();
+  });
 
-      goBack();
-    }
-  );
+  $btnNext.on("click", function (e) {
+    e.preventDefault();
+    goNext();
+  });
 
-  $btnNext.on(
-    "click",
-    function (e) {
-      e.preventDefault();
-
-      goNext();
-    }
-  );
-
-  function bindDivButtonA11y(
-    $el,
-    onActivate
-  ) {
-    $el.on(
-      "keydown",
-      function (e) {
-        if (
-          e.key === "Enter" ||
-          e.key === " "
-        ) {
-          e.preventDefault();
-
-          onActivate();
-        }
+  function bindDivButtonA11y($el, onActivate) {
+    $el.on("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onActivate();
       }
-    );
+    });
   }
 
-  bindDivButtonA11y(
-    $btnBack,
-    goBack
-  );
+  bindDivButtonA11y($btnBack, goBack);
+  bindDivButtonA11y($btnNext, goNext);
 
-  bindDivButtonA11y(
-    $btnNext,
-    goNext
-  );
+  $btnNext.on("click", SEL.completeBtn, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-  $btnNext.on(
-    "click",
-    SEL.completeBtn,
-    function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    const action = $(this).attr("data-exec-complete");
 
-      const action = $(this).attr(
-        "data-exec-complete"
-      );
-
-      if (
-        action === "finish"
-      ) {
-        closeAll();
-        return;
-      }
-
-      if (
-        action === "repeat"
-      ) {
-        const enabled =
-          getEnabledCategoryIndexes();
-
-        if (!enabled.length) {
-          return;
-        }
-
-        executeMode =
-          "session";
-
-        openExecuteForCategory(
-          enabled[0]
-        );
-      }
+    if (action === "finish") {
+      closeAll();
+      return;
     }
-  );
 
-  $btnNext.on(
-    "keydown",
-    SEL.completeBtn,
-    function (e) {
-      if (
-        e.key !== "Enter" &&
-        e.key !== " "
-      ) {
-        return;
-      }
+    if (action === "repeat") {
+      const enabled = getEnabledCategoryIndexes();
+      if (!enabled.length) return;
 
-      e.preventDefault();
-      e.stopPropagation();
-
-      $(this).trigger(
-        "click"
-      );
+      executeMode = "session";
+      openExecuteForCategory(enabled[0]);
     }
-  );
+  });
 
-  $executeOverlay.on(
-    "click",
-    function (e) {
-      if (e.target === this) {
-        closeAll();
-      }
+  $btnNext.on("keydown", SEL.completeBtn, function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    $(this).trigger("click");
+  });
+
+  $executeOverlay.on("click", function (e) {
+    if (e.target === this) closeAll();
+  });
+
+  $btnFullscreen.on("click", async function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      if (player) await player.requestFullscreen();
+    } catch (err) {
+      const iframe = document.querySelector("#executeVimeoMount iframe");
+      if (iframe?.requestFullscreen) iframe.requestFullscreen();
     }
-  );
-
-  $btnFullscreen.on(
-    "click",
-    async function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      try {
-        if (player) {
-          await player.requestFullscreen();
-        }
-      } catch (err) {
-        const iframe =
-          document.querySelector(
-            "#executeVimeoMount iframe"
-          );
-
-        if (
-          iframe?.requestFullscreen
-        ) {
-          iframe.requestFullscreen();
-        }
-      }
-    }
-  );
+  });
 
   // -------------------------
   // 6b) MODE TOGGLE
   // -------------------------
-  $(document).on(
-    "click",
-    SEL.overlayToggle,
-    function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  $(document).on("click", SEL.overlayToggle, function (e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-      if (
-        !Overlay.isOpen() ||
-        !currentCard ||
-        !currentCard.length
-      ) {
-        return;
+    if (!Overlay.isOpen() || !currentCard || !currentCard.length) return;
+
+    const active = Overlay.activeScene();
+
+    if (active === "execute") {
+      if ($executeOverlay.hasClass(CLS.executeOpen)) {
+        $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
+        unloadPlayer();
       }
 
-      const active =
-        Overlay.activeScene();
-
-      if (
-        active === "execute"
-      ) {
-        if (
-          $executeOverlay.hasClass(
-            CLS.executeOpen
-          )
-        ) {
-          $executeOverlay
-            .removeClass(
-              CLS.executeOpen
-            )
-            .attr(
-              "aria-hidden",
-              "true"
-            );
-
-          unloadPlayer();
-        }
-
-        populateDeepdiveFromCard(
-          currentCard
-        );
-
-        Overlay.open(
-          "deepdive"
-        );
-
-        return;
-      }
-
-      if (
-        active === "deepdive"
-      ) {
-        setCurrentFromCard(
-          currentCard
-        );
-
-        Overlay.open(
-          "execute"
-        );
-
-        $executeOverlay
-          .addClass(
-            CLS.executeOpen
-          )
-          .attr(
-            "aria-hidden",
-            "false"
-          );
-
-        syncFitFillForViewport();
-
-        setProgressUI(
-          currentCatIndex
-        );
-
-        syncNextState();
-
-        loadCard(
-          currentCard
-        );
-      }
+      populateDeepdiveFromCard(currentCard);
+      Overlay.open("deepdive");
+      return;
     }
-  );
+
+    if (active === "deepdive") {
+      setCurrentFromCard(currentCard);
+
+      Overlay.open("execute");
+      $executeOverlay.addClass(CLS.executeOpen).attr("aria-hidden", "false");
+
+      syncFitFillForViewport();
+      setProgressUI(currentCatIndex);
+      syncNextState();
+      loadCard(currentCard);
+    }
+  });
 
   // -------------------------
   // 7) CLOSE ALL + ESC
   // -------------------------
   function closeAll() {
-    if (
-      $executeOverlay.hasClass(
-        CLS.executeOpen
-      )
-    ) {
-      $executeOverlay
-        .removeClass(
-          CLS.executeOpen
-        )
-        .attr(
-          "aria-hidden",
-          "true"
-        );
-
+    if ($executeOverlay.hasClass(CLS.executeOpen)) {
+      $executeOverlay.removeClass(CLS.executeOpen).attr("aria-hidden", "true");
       unloadPlayer();
     }
 
     Overlay.close();
-
     executeMode = "preview";
-
     setNextNormal();
   }
 
-  $(document).on(
-    "keydown",
-    function (e) {
-      if (
-        e.key !== "Escape"
-      ) {
-        return;
-      }
+  $(document).on("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!Overlay.isOpen()) return;
 
-      if (!Overlay.isOpen()) {
-        return;
-      }
-
-      closeAll();
-    }
-  );
+    closeAll();
+  });
 
   if ($btnNext.length) {
-    $btnNext
-      .find(SEL.nextComplete)
-      .css(
-        "display",
-        "none"
-      );
-
-    $btnNext
-      .find(SEL.nextLabel)
-      .css(
-        "display",
-        ""
-      );
-
-    $btnNext.attr(
-      "data-state",
-      "next"
-    );
+    $btnNext.find(SEL.nextComplete).css("display", "none");
+    $btnNext.find(SEL.nextLabel).css("display", "");
+    $btnNext.attr("data-state", "next");
   }
 
   initHowToOverlay();
@@ -1436,135 +921,60 @@ function initClient() {
 }
 
 function initHowToOverlay() {
-  const overlay =
-    document.querySelector(
-      ".howto-overlay"
-    );
-
-  const openButtons =
-    document.querySelectorAll(
-      "[data-howto-open]"
-    );
-
-  const closeButtons =
-    document.querySelectorAll(
-      "[data-howto-close]"
-    );
+  const overlay = document.querySelector(".howto-overlay");
+  const openButtons = document.querySelectorAll("[data-howto-open]");
+  const closeButtons = document.querySelectorAll("[data-howto-close]");
 
   if (!overlay) return;
 
-  openButtons.forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        function (e) {
-          e.preventDefault();
+  openButtons.forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.preventDefault();
 
-          overlay.classList.add(
-            "is-open"
-          );
+      overlay.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+    });
+  });
 
-          document.body.style.overflow =
-            "hidden";
-        }
-      );
-    }
-  );
+  closeButtons.forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.preventDefault();
 
-  closeButtons.forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        function (e) {
-          e.preventDefault();
-
-          overlay.classList.remove(
-            "is-open"
-          );
-
-          document.body.style.overflow =
-            "";
-        }
-      );
-    }
-  );
+      overlay.classList.remove("is-open");
+      document.body.style.overflow = "";
+    });
+  });
 }
 
 function initHowToScroll() {
-  const scrollContainer =
-    document.getElementById(
-      "howto-scroll"
-    );
+  const scrollContainer = document.getElementById("howto-scroll");
+  const topbar = document.getElementById("howto-topbar");
+  const navLinks = document.querySelectorAll("[data-scroll-target]");
 
-  const topbar =
-    document.getElementById(
-      "howto-topbar"
-    );
-
-  const navLinks =
-    document.querySelectorAll(
-      "[data-scroll-target]"
-    );
-
-  if (
-    !scrollContainer ||
-    !navLinks.length
-  ) {
-    return;
-  }
+  if (!scrollContainer || !navLinks.length) return;
 
   navLinks.forEach((link) => {
-    link.addEventListener(
-      "click",
-      function (e) {
-        e.preventDefault();
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
 
-        const targetId =
-          this.getAttribute(
-            "data-scroll-target"
-          );
+      const targetId = this.getAttribute("data-scroll-target");
+      const targetEl = document.getElementById(targetId);
 
-        const targetEl =
-          document.getElementById(
-            targetId
-          );
+      if (!targetEl) return;
 
-        if (!targetEl) return;
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const targetTop = targetEl.getBoundingClientRect().top;
+      const currentScroll = scrollContainer.scrollTop;
 
-        const containerTop =
-          scrollContainer
-            .getBoundingClientRect()
-            .top;
+      const topbarHeight = topbar ? topbar.getBoundingClientRect().height : 0;
+      const extraGap = 12;
 
-        const targetTop =
-          targetEl
-            .getBoundingClientRect()
-            .top;
+      const offset = targetTop - containerTop + currentScroll - topbarHeight - extraGap;
 
-        const currentScroll =
-          scrollContainer.scrollTop;
-
-        const topbarHeight =
-          topbar
-            ? topbar
-                .getBoundingClientRect()
-                .height
-            : 0;
-
-        const extraGap = 12;
-
-        const offset =
-          targetTop -
-          containerTop +
-          currentScroll -
-          topbarHeight -
-          extraGap;
-
-        scrollContainer.scrollTo({
-          top: offset,
-          behavior: "smooth",
-        });
-      }
-    );
+      scrollContainer.scrollTo({
+        top: offset,
+        behavior: "smooth",
+      });
+    });
   });
 }
