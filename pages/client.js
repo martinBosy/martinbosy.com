@@ -27,7 +27,7 @@ function initClient() {
     // Category ON/OFF
     categorySwitch: ".off-switch",
 
-    // Exercise lock
+    // Exercise selection lock
     exerciseLock: ".lock-switch_wrapper",
     lockOpen: ".lock-open",
     lockClosed: ".lock-closed",
@@ -73,7 +73,7 @@ function initClient() {
   };
 
   const CLS = {
-    exerciseLocked: "is-locked",
+    exerciseLocked: "is-exercise-locked",
     executeOpen: "is-open",
     exerciseChanging: "is-changing-exercise",
   };
@@ -105,12 +105,16 @@ function initClient() {
 
       $comp.data("swiper", inst);
 
-      $comp.find(SEL.next).first()
+      $comp
+        .find(SEL.next)
+        .first()
         .attr("role", "button")
         .attr("tabindex", "0")
         .attr("aria-label", "Next exercise");
 
-      $comp.find(SEL.prev).first()
+      $comp
+        .find(SEL.prev)
+        .first()
         .attr("role", "button")
         .attr("tabindex", "0")
         .attr("aria-label", "Previous exercise");
@@ -156,7 +160,10 @@ function initClient() {
     }
 
     function close() {
-      $ov.attr("data-open", "false").attr("aria-hidden", "true");
+      $ov
+        .attr("data-open", "false")
+        .attr("aria-hidden", "true");
+
       lockScroll(false);
     }
 
@@ -216,12 +223,38 @@ function initClient() {
   }
 
   // =========================================================
-  // 2) CATEGORY ON/OFF
+  // 2) CATEGORY STATE
   // =========================================================
 
   function isCategoryEnabled($cat) {
     return $cat.attr("data-enabled") !== "false";
   }
+
+  function isExerciseLocked($cat) {
+    return $cat.hasClass(CLS.exerciseLocked);
+  }
+
+  function syncCategoryNavigation($cat) {
+    const enabled = isCategoryEnabled($cat);
+    const locked = isExerciseLocked($cat);
+    const interactive = enabled && !locked;
+
+    const inst = $cat.data("swiper");
+
+    if (inst) {
+      inst.allowSlideNext = interactive;
+      inst.allowSlidePrev = interactive;
+    }
+
+    $cat
+      .find(SEL.next + "," + SEL.prev)
+      .attr("aria-disabled", interactive ? "false" : "true")
+      .attr("tabindex", interactive ? "0" : "-1");
+  }
+
+  // =========================================================
+  // 3) CATEGORY ON/OFF
+  // =========================================================
 
   function syncCategorySwitch($sw, enabled) {
     $sw
@@ -234,17 +267,7 @@ function initClient() {
 
   function applyCategoryEnabledState($cat, enabled) {
     $cat.attr("data-enabled", enabled ? "true" : "false");
-
-    const inst = $cat.data("swiper");
-
-    if (inst) {
-      inst.allowSlideNext = enabled;
-      inst.allowSlidePrev = enabled;
-    }
-
-    $cat.find(SEL.next + "," + SEL.prev)
-      .attr("aria-disabled", enabled ? "false" : "true")
-      .attr("tabindex", enabled ? "0" : "-1");
+    syncCategoryNavigation($cat);
   }
 
   $(ROOT + " " + SEL.categorySwitch).each(function () {
@@ -256,31 +279,96 @@ function initClient() {
     syncCategorySwitch($sw, enabled);
   });
 
-  $(document).on("click", ROOT + " " + SEL.categorySwitch, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    ROOT + " " + SEL.categorySwitch,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const $sw = $(this);
-    const $cat = $sw.closest(".slider-category_component");
-    const enabled = !isCategoryEnabled($cat);
+      const $sw = $(this);
+      const $cat = $sw.closest(".slider-category_component");
+      const enabled = !isCategoryEnabled($cat);
 
-    applyCategoryEnabledState($cat, enabled);
-    syncCategorySwitch($sw, enabled);
-  });
+      applyCategoryEnabledState($cat, enabled);
+      syncCategorySwitch($sw, enabled);
+    }
+  );
 
-  $(document).on("keydown", ROOT + " " + SEL.categorySwitch, function (e) {
-    if (e.key !== "Enter" && e.key !== " ") return;
+  $(document).on(
+    "keydown",
+    ROOT + " " + SEL.categorySwitch,
+    function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
 
-    e.preventDefault();
-    $(this).trigger("click");
-  });
+      e.preventDefault();
+      $(this).trigger("click");
+    }
+  );
 
   // =========================================================
-  // 3) EXERCISE SWITCHING
+  // 4) EXERCISE SELECTION LOCK
+  // =========================================================
+
+  function syncExerciseLock($cat) {
+    const locked = isExerciseLocked($cat);
+    const $locks = $cat.find(SEL.exerciseLock);
+
+    $locks
+      .attr("role", "button")
+      .attr("tabindex", isCategoryEnabled($cat) ? "0" : "-1")
+      .attr("aria-pressed", locked ? "true" : "false")
+      .attr("aria-label", locked ? "Unlock exercise" : "Lock exercise");
+
+    $locks.find(SEL.lockOpen).toggle(!locked);
+    $locks.find(SEL.lockClosed).toggle(locked);
+
+    syncCategoryNavigation($cat);
+  }
+
+  $(SEL.slider).each(function () {
+    syncExerciseLock($(this));
+  });
+
+  $(document).on(
+    "click",
+    SEL.card + " " + SEL.exerciseLock,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const $cat = $(this).closest(".slider-category_component");
+
+      if (!$cat.length || !isCategoryEnabled($cat)) return;
+
+      $cat.toggleClass(CLS.exerciseLocked);
+      syncExerciseLock($cat);
+    }
+  );
+
+  $(document).on(
+    "keydown",
+    SEL.card + " " + SEL.exerciseLock,
+    function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+
+      e.preventDefault();
+      $(this).trigger("click");
+    }
+  );
+
+  // =========================================================
+  // 5) EXERCISE SWITCHING
   // =========================================================
 
   function switchExercise($cat, direction) {
-    if (!$cat.length || !isCategoryEnabled($cat)) return;
+    if (
+      !$cat.length ||
+      !isCategoryEnabled($cat) ||
+      isExerciseLocked($cat)
+    ) {
+      return;
+    }
 
     const inst = $cat.data("swiper");
 
@@ -292,8 +380,10 @@ function initClient() {
       .addClass(CLS.exerciseChanging);
 
     window.setTimeout(() => {
-      // Category could theoretically be switched off during the fade.
-      if (!isCategoryEnabled($cat)) {
+      if (
+        !isCategoryEnabled($cat) ||
+        isExerciseLocked($cat)
+      ) {
         $cat
           .removeClass(CLS.exerciseChanging)
           .removeData("exercise-switching");
@@ -301,11 +391,12 @@ function initClient() {
         return;
       }
 
-      if (direction === "next") inst.slideNext(0);
-      else inst.slidePrev(0);
+      if (direction === "next") {
+        inst.slideNext(0);
+      } else {
+        inst.slidePrev(0);
+      }
 
-      // Give the new slide one painted frame at opacity 0,
-      // then allow it to fade back in.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           $cat.removeClass(CLS.exerciseChanging);
@@ -318,25 +409,33 @@ function initClient() {
     }, EXERCISE_FADE_OUT_MS);
   }
 
-  $(document).on("click", ROOT + " " + SEL.next, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    ROOT + " " + SEL.next,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    switchExercise(
-      $(this).closest(".slider-category_component"),
-      "next"
-    );
-  });
+      switchExercise(
+        $(this).closest(".slider-category_component"),
+        "next"
+      );
+    }
+  );
 
-  $(document).on("click", ROOT + " " + SEL.prev, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    ROOT + " " + SEL.prev,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    switchExercise(
-      $(this).closest(".slider-category_component"),
-      "prev"
-    );
-  });
+      switchExercise(
+        $(this).closest(".slider-category_component"),
+        "prev"
+      );
+    }
+  );
 
   $(document).on(
     "keydown",
@@ -356,54 +455,7 @@ function initClient() {
   );
 
   // =========================================================
-  // 4) EXERCISE LOCK
-  // =========================================================
-
-  function syncExerciseLock($lock, locked) {
-    $lock
-      .attr("role", "button")
-      .attr("tabindex", "0")
-      .attr("aria-pressed", locked ? "true" : "false")
-      .attr("aria-label", locked ? "Unlock exercise" : "Lock exercise");
-
-    $lock.find(SEL.lockOpen).toggle(!locked);
-    $lock.find(SEL.lockClosed).toggle(locked);
-  }
-
-  $(SEL.card).each(function () {
-    const $card = $(this);
-    const $lock = $card.find(SEL.exerciseLock).first();
-
-    if (!$lock.length) return;
-
-    syncExerciseLock($lock, $card.hasClass(CLS.exerciseLocked));
-  });
-
-  $(document).on("click", SEL.card + " " + SEL.exerciseLock, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const $lock = $(this);
-    const $card = $lock.closest(".move-category-box");
-    const $cat = $card.closest(".slider-category_component");
-
-    if (!$card.length || !isCategoryEnabled($cat)) return;
-
-    const locked = !$card.hasClass(CLS.exerciseLocked);
-
-    $card.toggleClass(CLS.exerciseLocked, locked);
-    syncExerciseLock($lock, locked);
-  });
-
-  $(document).on("keydown", SEL.card + " " + SEL.exerciseLock, function (e) {
-    if (e.key !== "Enter" && e.key !== " ") return;
-
-    e.preventDefault();
-    $(this).trigger("click");
-  });
-
-  // =========================================================
-  // 5) RANDOMIZE
+  // 6) RANDOMIZE
   // =========================================================
 
   function shuffleArray(arr) {
@@ -426,14 +478,11 @@ function initClient() {
       // OFF categories do not participate.
       if (!isCategoryEnabled($cat)) return;
 
-      // Preserve a category when its currently selected exercise is locked.
-      const $activeCard = $cat
-        .find(".swiper-slide.swiper-slide-active .move-category-box")
-        .first();
-
-      if ($activeCard.hasClass(CLS.exerciseLocked)) return;
+      // Locked categories preserve their current exercise selection.
+      if (isExerciseLocked($cat)) return;
 
       const inst = $cat.data("swiper");
+
       const $wrapper = $cat
         .find(SEL.swiper)
         .first()
@@ -458,15 +507,19 @@ function initClient() {
   });
 
   // =========================================================
-  // 6) DEEP DIVE
+  // 7) DEEP DIVE
   // =========================================================
 
   function populateDeepdiveFromCard($card) {
-    const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
+    const title =
+      ($card.attr("data-ex-title") || "").trim() || "Exercise";
 
     setOverlayTitles(title);
 
-    const $ddScene = Overlay.$ov.find(".exercise-scene.is-deepdive").first();
+    const $ddScene = Overlay.$ov
+      .find(".exercise-scene.is-deepdive")
+      .first();
+
     const $body = $ddScene.find(SEL.ddBody).first();
     const $graphic = $ddScene.find(SEL.ddGraphic).first();
     const $chev = $ddScene.find(SEL.chevron).first();
@@ -552,22 +605,38 @@ function initClient() {
     );
   }
 
-  $(document).on("click", SEL.overlay + " " + SEL.ddBody, function (e) {
-    if ($(e.target).closest("a, button, [data-no-toggle]").length) return;
+  $(document).on(
+    "click",
+    SEL.overlay + " " + SEL.ddBody,
+    function (e) {
+      if (
+        $(e.target)
+          .closest("a, button, [data-no-toggle]")
+          .length
+      ) {
+        return;
+      }
 
-    toggleDeepdiveBody($(this));
-  });
+      toggleDeepdiveBody($(this));
+    }
+  );
 
-  $(document).on("click", SEL.overlay + " " + SEL.chevron, function (e) {
-    e.preventDefault();
+  $(document).on(
+    "click",
+    SEL.overlay + " " + SEL.chevron,
+    function (e) {
+      e.preventDefault();
 
-    const $body = $(this).siblings(SEL.ddBody);
+      const $body = $(this).siblings(SEL.ddBody);
 
-    if ($body.length) toggleDeepdiveBody($body);
-  });
+      if ($body.length) {
+        toggleDeepdiveBody($body);
+      }
+    }
+  );
 
   // =========================================================
-  // 7) EXECUTE
+  // 8) EXECUTE
   // =========================================================
 
   const $executeOverlay = $(SEL.executeOverlay);
@@ -593,7 +662,9 @@ function initClient() {
 
   function isMobilePortrait() {
     return window
-      .matchMedia("(max-width: 767px) and (orientation: portrait)")
+      .matchMedia(
+        "(max-width: 767px) and (orientation: portrait)"
+      )
       .matches;
   }
 
@@ -617,7 +688,9 @@ function initClient() {
       localStorage.setItem(LS_KEY, mode);
     } catch (e) {}
 
-    const isFill = isMobilePortrait() && mode === "fill";
+    const isFill =
+      isMobilePortrait() &&
+      mode === "fill";
 
     $executeOverlay.toggleClass("is-fill", isFill);
     setFitFillUI(mode);
@@ -637,10 +710,13 @@ function initClient() {
 
   let fitFillTimer = null;
 
-  $(window).on("resize orientationchange", function () {
-    clearTimeout(fitFillTimer);
-    fitFillTimer = setTimeout(syncFitFillForViewport, 80);
-  });
+  $(window).on(
+    "resize orientationchange",
+    function () {
+      clearTimeout(fitFillTimer);
+      fitFillTimer = setTimeout(syncFitFillForViewport, 80);
+    }
+  );
 
   $btnFit.on("click", function (e) {
     e.preventDefault();
@@ -657,7 +733,13 @@ function initClient() {
   });
 
   (function preconnectVimeo() {
-    if (document.querySelector("link[data-preconnect-vimeo]")) return;
+    if (
+      document.querySelector(
+        "link[data-preconnect-vimeo]"
+      )
+    ) {
+      return;
+    }
 
     [
       "https://player.vimeo.com",
@@ -670,7 +752,11 @@ function initClient() {
       link.href = href;
       link.crossOrigin = "anonymous";
 
-      link.setAttribute("data-preconnect-vimeo", "1");
+      link.setAttribute(
+        "data-preconnect-vimeo",
+        "1"
+      );
+
       document.head.appendChild(link);
     });
   })();
@@ -694,14 +780,19 @@ function initClient() {
     if (!url) return null;
 
     const match =
-      url.match(/player\.vimeo\.com\/video\/(\d+)/) ||
-      url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      url.match(
+        /player\.vimeo\.com\/video\/(\d+)/
+      ) ||
+      url.match(
+        /vimeo\.com\/(?:video\/)?(\d+)/
+      );
 
     return match ? match[1] : null;
   }
 
   function getActiveCardInCategory(catIndex) {
     const $cat = $(SEL.slider).eq(catIndex);
+
     const $activeSlide = $cat
       .find(".swiper-slide.swiper-slide-active")
       .first();
@@ -712,31 +803,57 @@ function initClient() {
   }
 
   async function loadCard($card) {
-    const title = ($card.attr("data-ex-title") || "").trim() || "Exercise";
-    const doseTxt = ($card.attr("data-ex-dose") || "").trim();
-    const cue1Txt = ($card.attr("data-ex-cue1") || "").trim();
-    const cue2Txt = ($card.attr("data-ex-cue2") || "").trim();
-    const cue3Txt = ($card.attr("data-ex-cue3") || "").trim();
-    const cue4Txt = ($card.attr("data-ex-cue4") || "").trim();
-    const vimeoUrl = ($card.attr("data-ex-vimeo-url") || "").trim();
+    const title =
+      ($card.attr("data-ex-title") || "").trim() ||
+      "Exercise";
+
+    const doseTxt =
+      ($card.attr("data-ex-dose") || "").trim();
+
+    const cue1Txt =
+      ($card.attr("data-ex-cue1") || "").trim();
+
+    const cue2Txt =
+      ($card.attr("data-ex-cue2") || "").trim();
+
+    const cue3Txt =
+      ($card.attr("data-ex-cue3") || "").trim();
+
+    const cue4Txt =
+      ($card.attr("data-ex-cue4") || "").trim();
+
+    const vimeoUrl =
+      ($card.attr("data-ex-vimeo-url") || "").trim();
 
     setOverlayTitles(title);
 
     $dose.text(doseTxt);
-    $cue1.text(cue1Txt).toggle(!!cue1Txt);
-    $cue2.text(cue2Txt).toggle(!!cue2Txt);
+
+    $cue1
+      .text(cue1Txt)
+      .toggle(!!cue1Txt);
+
+    $cue2
+      .text(cue2Txt)
+      .toggle(!!cue2Txt);
+
     $cue3
       .text(cue3Txt || cue4Txt)
       .toggle(!!(cue3Txt || cue4Txt));
 
     unloadPlayer();
 
-    const vimeoId = extractVimeoId(vimeoUrl);
+    const vimeoId =
+      extractVimeoId(vimeoUrl);
 
     if (!vimeoId) return;
 
-    const iframe = document.createElement("iframe");
-    const url = new URL(`https://player.vimeo.com/video/${vimeoId}`);
+    const iframe =
+      document.createElement("iframe");
+
+    const url = new URL(
+      `https://player.vimeo.com/video/${vimeoId}`
+    );
 
     url.search = new URLSearchParams({
       autoplay: "1",
@@ -756,11 +873,19 @@ function initClient() {
       "autoplay; fullscreen; picture-in-picture"
     );
 
-    iframe.setAttribute("allowfullscreen", "");
+    iframe.setAttribute(
+      "allowfullscreen",
+      ""
+    );
 
-    $mount.empty().append(iframe);
+    $mount
+      .empty()
+      .append(iframe);
 
-    if (typeof Vimeo !== "undefined" && Vimeo.Player) {
+    if (
+      typeof Vimeo !== "undefined" &&
+      Vimeo.Player
+    ) {
       player = new Vimeo.Player(iframe);
 
       try {
@@ -789,59 +914,106 @@ function initClient() {
 
   function isLastCategory(catIndex) {
     if (executeMode === "session") {
-      const enabled = getEnabledCategoryIndexes();
+      const enabled =
+        getEnabledCategoryIndexes();
 
       return (
         enabled.length > 0 &&
-        catIndex === enabled[enabled.length - 1]
+        catIndex ===
+          enabled[enabled.length - 1]
       );
     }
 
-    const total = totalCategories();
+    const total =
+      totalCategories();
 
-    return total > 0 && catIndex === total - 1;
+    return (
+      total > 0 &&
+      catIndex === total - 1
+    );
   }
 
   function setProgressUI(catIndex) {
-    const $fill = $(SEL.progressFill);
+    const $fill =
+      $(SEL.progressFill);
 
     if (!$fill.length) return;
 
     if (executeMode === "session") {
-      const enabled = getEnabledCategoryIndexes();
+      const enabled =
+        getEnabledCategoryIndexes();
 
       if (!enabled.length) {
         $fill.css("width", "0%");
         return;
       }
 
-      const position = enabled.indexOf(catIndex);
-      const safePosition = position >= 0 ? position : 0;
+      const position =
+        enabled.indexOf(catIndex);
+
+      const safePosition =
+        position >= 0 ? position : 0;
+
       const pct = Math.round(
         ((safePosition + 1) / enabled.length) * 100
       );
 
-      $fill.css("width", pct + "%");
+      $fill.css(
+        "width",
+        pct + "%"
+      );
+
       return;
     }
 
-    const total = totalCategories() || 1;
-    const idx = Math.max(0, Math.min(catIndex, total - 1));
-    const pct = Math.round(((idx + 1) / total) * 100);
+    const total =
+      totalCategories() || 1;
 
-    $fill.css("width", pct + "%");
+    const idx =
+      Math.max(
+        0,
+        Math.min(catIndex, total - 1)
+      );
+
+    const pct =
+      Math.round(
+        ((idx + 1) / total) * 100
+      );
+
+    $fill.css(
+      "width",
+      pct + "%"
+    );
   }
 
   function setNextNormal() {
-    $btnNext.attr("data-state", "next");
-    $btnNext.find(SEL.nextLabel).css("display", "");
-    $btnNext.find(SEL.nextComplete).css("display", "none");
+    $btnNext.attr(
+      "data-state",
+      "next"
+    );
+
+    $btnNext
+      .find(SEL.nextLabel)
+      .css("display", "");
+
+    $btnNext
+      .find(SEL.nextComplete)
+      .css("display", "none");
   }
 
   function setNextComplete() {
-    $btnNext.attr("data-state", "complete");
-    $btnNext.find(SEL.nextLabel).css("display", "none");
-    $btnNext.find(SEL.nextComplete).css("display", "flex");
+    $btnNext.attr(
+      "data-state",
+      "complete"
+    );
+
+    $btnNext
+      .find(SEL.nextLabel)
+      .css("display", "none");
+
+    $btnNext
+      .find(SEL.nextComplete)
+      .css("display", "flex");
   }
 
   function syncNextState() {
@@ -858,19 +1030,23 @@ function initClient() {
   }
 
   function openExecuteForCategory(catIndex) {
-    const total = totalCategories();
+    const total =
+      totalCategories();
 
     if (!total) return;
 
     if (executeMode === "session") {
-      const enabled = getEnabledCategoryIndexes();
+      const enabled =
+        getEnabledCategoryIndexes();
 
       if (!enabled.length) return;
 
       if (!enabled.includes(catIndex)) {
-        const nextEnabled = enabled.find(
-          (index) => index >= catIndex
-        );
+        const nextEnabled =
+          enabled.find(
+            (index) =>
+              index >= catIndex
+          );
 
         catIndex =
           nextEnabled !== undefined
@@ -878,12 +1054,20 @@ function initClient() {
             : enabled[0];
       }
 
-      currentCatIndex = catIndex;
+      currentCatIndex =
+        catIndex;
     } else {
-      currentCatIndex = wrapIndex(catIndex, total);
+      currentCatIndex =
+        wrapIndex(
+          catIndex,
+          total
+        );
     }
 
-    const $card = getActiveCardInCategory(currentCatIndex);
+    const $card =
+      getActiveCardInCategory(
+        currentCatIndex
+      );
 
     if (!$card.length) return;
 
@@ -908,7 +1092,10 @@ function initClient() {
       e.preventDefault();
       e.stopPropagation();
 
-      const $card = $(this).closest(".move-category-box");
+      const $card =
+        $(this).closest(
+          ".move-category-box"
+        );
 
       if (!$card.length) return;
 
@@ -928,19 +1115,27 @@ function initClient() {
     }
   );
 
-  $(document).on("click", SEL.startButton, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    SEL.startButton,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (Overlay.isOpen()) return;
+      if (Overlay.isOpen()) return;
 
-    const enabled = getEnabledCategoryIndexes();
+      const enabled =
+        getEnabledCategoryIndexes();
 
-    if (!enabled.length) return;
+      if (!enabled.length) return;
 
-    executeMode = "session";
-    openExecuteForCategory(enabled[0]);
-  });
+      executeMode = "session";
+
+      openExecuteForCategory(
+        enabled[0]
+      );
+    }
+  );
 
   $btnClose.on("click", function (e) {
     e.preventDefault();
@@ -948,36 +1143,58 @@ function initClient() {
   });
 
   function goBack() {
-    const total = totalCategories();
+    const total =
+      totalCategories();
 
     if (!total) return;
 
     if (executeMode === "session") {
-      const enabled = getEnabledCategoryIndexes();
-      const position = enabled.indexOf(currentCatIndex);
+      const enabled =
+        getEnabledCategoryIndexes();
+
+      const position =
+        enabled.indexOf(
+          currentCatIndex
+        );
 
       if (position <= 0) {
         closeAll();
         return;
       }
 
-      openExecuteForCategory(enabled[position - 1]);
+      openExecuteForCategory(
+        enabled[position - 1]
+      );
+
       return;
     }
 
-    openExecuteForCategory(currentCatIndex - 1);
+    openExecuteForCategory(
+      currentCatIndex - 1
+    );
   }
 
   function goNext() {
-    const total = totalCategories();
+    const total =
+      totalCategories();
 
     if (!total) return;
 
-    if ($btnNext.attr("data-state") === "complete") return;
+    if (
+      $btnNext.attr("data-state") ===
+      "complete"
+    ) {
+      return;
+    }
 
     if (executeMode === "session") {
-      const enabled = getEnabledCategoryIndexes();
-      const position = enabled.indexOf(currentCatIndex);
+      const enabled =
+        getEnabledCategoryIndexes();
+
+      const position =
+        enabled.indexOf(
+          currentCatIndex
+        );
 
       if (
         position < 0 ||
@@ -987,11 +1204,16 @@ function initClient() {
         return;
       }
 
-      openExecuteForCategory(enabled[position + 1]);
+      openExecuteForCategory(
+        enabled[position + 1]
+      );
+
       return;
     }
 
-    openExecuteForCategory(currentCatIndex + 1);
+    openExecuteForCategory(
+      currentCatIndex + 1
+    );
   }
 
   $btnBack.on("click", function (e) {
@@ -1013,38 +1235,60 @@ function initClient() {
     });
   }
 
-  bindDivButtonA11y($btnBack, goBack);
-  bindDivButtonA11y($btnNext, goNext);
+  bindDivButtonA11y(
+    $btnBack,
+    goBack
+  );
 
-  $btnNext.on("click", SEL.completeBtn, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  bindDivButtonA11y(
+    $btnNext,
+    goNext
+  );
 
-    const action = $(this).attr("data-exec-complete");
+  $btnNext.on(
+    "click",
+    SEL.completeBtn,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (action === "finish") {
-      closeAll();
-      return;
+      const action =
+        $(this).attr(
+          "data-exec-complete"
+        );
+
+      if (action === "finish") {
+        closeAll();
+        return;
+      }
+
+      if (action === "repeat") {
+        const enabled =
+          getEnabledCategoryIndexes();
+
+        if (!enabled.length) return;
+
+        executeMode = "session";
+
+        openExecuteForCategory(
+          enabled[0]
+        );
+      }
     }
+  );
 
-    if (action === "repeat") {
-      const enabled = getEnabledCategoryIndexes();
+  $btnNext.on(
+    "keydown",
+    SEL.completeBtn,
+    function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
 
-      if (!enabled.length) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-      executeMode = "session";
-      openExecuteForCategory(enabled[0]);
+      $(this).trigger("click");
     }
-  });
-
-  $btnNext.on("keydown", SEL.completeBtn, function (e) {
-    if (e.key !== "Enter" && e.key !== " ") return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    $(this).trigger("click");
-  });
+  );
 
   $executeOverlay.on("click", function (e) {
     if (e.target === this) {
@@ -1052,83 +1296,119 @@ function initClient() {
     }
   });
 
-  $btnFullscreen.on("click", async function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $btnFullscreen.on(
+    "click",
+    async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    try {
-      if (player) {
-        await player.requestFullscreen();
-      }
-    } catch (err) {
-      const iframe = document.querySelector(
-        "#executeVimeoMount iframe"
-      );
+      try {
+        if (player) {
+          await player.requestFullscreen();
+        }
+      } catch (err) {
+        const iframe =
+          document.querySelector(
+            "#executeVimeoMount iframe"
+          );
 
-      if (iframe?.requestFullscreen) {
-        iframe.requestFullscreen();
+        if (iframe?.requestFullscreen) {
+          iframe.requestFullscreen();
+        }
       }
     }
-  });
+  );
 
   // =========================================================
-  // 8) MODE TOGGLE
+  // 9) MODE TOGGLE
   // =========================================================
 
-  $(document).on("click", SEL.overlayToggle, function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  $(document).on(
+    "click",
+    SEL.overlayToggle,
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (
-      !Overlay.isOpen() ||
-      !currentCard ||
-      !currentCard.length
-    ) {
-      return;
-    }
+      if (
+        !Overlay.isOpen() ||
+        !currentCard ||
+        !currentCard.length
+      ) {
+        return;
+      }
 
-    const active = Overlay.activeScene();
+      const active =
+        Overlay.activeScene();
 
-    if (active === "execute") {
-      if ($executeOverlay.hasClass(CLS.executeOpen)) {
+      if (active === "execute") {
+        if (
+          $executeOverlay.hasClass(
+            CLS.executeOpen
+          )
+        ) {
+          $executeOverlay
+            .removeClass(
+              CLS.executeOpen
+            )
+            .attr(
+              "aria-hidden",
+              "true"
+            );
+
+          unloadPlayer();
+        }
+
+        populateDeepdiveFromCard(
+          currentCard
+        );
+
+        Overlay.open("deepdive");
+        return;
+      }
+
+      if (active === "deepdive") {
+        setCurrentFromCard(
+          currentCard
+        );
+
+        Overlay.open("execute");
+
         $executeOverlay
-          .removeClass(CLS.executeOpen)
-          .attr("aria-hidden", "true");
+          .addClass(
+            CLS.executeOpen
+          )
+          .attr(
+            "aria-hidden",
+            "false"
+          );
 
-        unloadPlayer();
+        syncFitFillForViewport();
+        setProgressUI(currentCatIndex);
+        syncNextState();
+        loadCard(currentCard);
       }
-
-      populateDeepdiveFromCard(currentCard);
-      Overlay.open("deepdive");
-
-      return;
     }
-
-    if (active === "deepdive") {
-      setCurrentFromCard(currentCard);
-
-      Overlay.open("execute");
-
-      $executeOverlay
-        .addClass(CLS.executeOpen)
-        .attr("aria-hidden", "false");
-
-      syncFitFillForViewport();
-      setProgressUI(currentCatIndex);
-      syncNextState();
-      loadCard(currentCard);
-    }
-  });
+  );
 
   // =========================================================
-  // 9) CLOSE + ESC
+  // 10) CLOSE + ESC
   // =========================================================
 
   function closeAll() {
-    if ($executeOverlay.hasClass(CLS.executeOpen)) {
+    if (
+      $executeOverlay.hasClass(
+        CLS.executeOpen
+      )
+    ) {
       $executeOverlay
-        .removeClass(CLS.executeOpen)
-        .attr("aria-hidden", "true");
+        .removeClass(
+          CLS.executeOpen
+        )
+        .attr(
+          "aria-hidden",
+          "true"
+        );
 
       unloadPlayer();
     }
@@ -1151,83 +1431,158 @@ function initClient() {
   });
 
   if ($btnNext.length) {
-    $btnNext.find(SEL.nextComplete).css("display", "none");
-    $btnNext.find(SEL.nextLabel).css("display", "");
-    $btnNext.attr("data-state", "next");
+    $btnNext
+      .find(SEL.nextComplete)
+      .css("display", "none");
+
+    $btnNext
+      .find(SEL.nextLabel)
+      .css("display", "");
+
+    $btnNext.attr(
+      "data-state",
+      "next"
+    );
   }
 
   initHowToOverlay();
   initHowToScroll();
 }
 
+
 // ===========================================================
 // HOW-TO OVERLAY
 // ===========================================================
 
 function initHowToOverlay() {
-  const overlay = document.querySelector(".howto-overlay");
-  const openButtons = document.querySelectorAll("[data-howto-open]");
-  const closeButtons = document.querySelectorAll("[data-howto-close]");
+  const overlay =
+    document.querySelector(
+      ".howto-overlay"
+    );
+
+  const openButtons =
+    document.querySelectorAll(
+      "[data-howto-open]"
+    );
+
+  const closeButtons =
+    document.querySelectorAll(
+      "[data-howto-close]"
+    );
 
   if (!overlay) return;
 
   openButtons.forEach((button) => {
-    button.addEventListener("click", function (e) {
-      e.preventDefault();
+    button.addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
 
-      overlay.classList.add("is-open");
-      document.body.style.overflow = "hidden";
-    });
+        overlay.classList.add(
+          "is-open"
+        );
+
+        document.body.style.overflow =
+          "hidden";
+      }
+    );
   });
 
   closeButtons.forEach((button) => {
-    button.addEventListener("click", function (e) {
-      e.preventDefault();
+    button.addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
 
-      overlay.classList.remove("is-open");
-      document.body.style.overflow = "";
-    });
+        overlay.classList.remove(
+          "is-open"
+        );
+
+        document.body.style.overflow =
+          "";
+      }
+    );
   });
 }
+
 
 // ===========================================================
 // HOW-TO SCROLL
 // ===========================================================
 
 function initHowToScroll() {
-  const scrollContainer = document.getElementById("howto-scroll");
-  const topbar = document.getElementById("howto-topbar");
-  const navLinks = document.querySelectorAll("[data-scroll-target]");
+  const scrollContainer =
+    document.getElementById(
+      "howto-scroll"
+    );
 
-  if (!scrollContainer || !navLinks.length) return;
+  const topbar =
+    document.getElementById(
+      "howto-topbar"
+    );
+
+  const navLinks =
+    document.querySelectorAll(
+      "[data-scroll-target]"
+    );
+
+  if (
+    !scrollContainer ||
+    !navLinks.length
+  ) {
+    return;
+  }
 
   navLinks.forEach((link) => {
-    link.addEventListener("click", function (e) {
-      e.preventDefault();
+    link.addEventListener(
+      "click",
+      function (e) {
+        e.preventDefault();
 
-      const targetId = this.getAttribute("data-scroll-target");
-      const targetEl = document.getElementById(targetId);
+        const targetId =
+          this.getAttribute(
+            "data-scroll-target"
+          );
 
-      if (!targetEl) return;
+        const targetEl =
+          document.getElementById(
+            targetId
+          );
 
-      const containerTop = scrollContainer.getBoundingClientRect().top;
-      const targetTop = targetEl.getBoundingClientRect().top;
-      const currentScroll = scrollContainer.scrollTop;
-      const topbarHeight = topbar
-        ? topbar.getBoundingClientRect().height
-        : 0;
+        if (!targetEl) return;
 
-      const offset =
-        targetTop -
-        containerTop +
-        currentScroll -
-        topbarHeight -
-        12;
+        const containerTop =
+          scrollContainer
+            .getBoundingClientRect()
+            .top;
 
-      scrollContainer.scrollTo({
-        top: offset,
-        behavior: "smooth",
-      });
-    });
+        const targetTop =
+          targetEl
+            .getBoundingClientRect()
+            .top;
+
+        const currentScroll =
+          scrollContainer.scrollTop;
+
+        const topbarHeight =
+          topbar
+            ? topbar
+                .getBoundingClientRect()
+                .height
+            : 0;
+
+        const offset =
+          targetTop -
+          containerTop +
+          currentScroll -
+          topbarHeight -
+          12;
+
+        scrollContainer.scrollTo({
+          top: offset,
+          behavior: "smooth",
+        });
+      }
+    );
   });
 }
