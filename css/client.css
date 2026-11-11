@@ -2,20 +2,20 @@
    LOCK STATES
 ========================================= */
 
-.slider-category_component .lock-open {
-  display: block !important;
+.lock-switch_wrapper .lock-open {
+  display: block;
 }
 
-.slider-category_component .lock-closed {
-  display: none !important;
+.lock-switch_wrapper .lock-closed {
+  display: none;
 }
 
-.slider-category_component.is-locked .lock-open {
-  display: none !important;
+.move-category-box.is-locked .lock-open {
+  display: none;
 }
 
-.slider-category_component.is-locked .lock-closed {
-  display: block !important;
+.move-category-box.is-locked .lock-closed {
+  display: block;
 }
 
 
@@ -23,12 +23,12 @@
    OFF SWITCH: active + focus state
 ========================================= */
 
-.off-switch.is-on {
+.off-switch.is-off {
   background: rgba(255, 0, 0, 0.5);
   border-color: rgba(52, 199, 89, 0.22);
 }
 
-.off-switch.is-on .off-switch__thumb {
+.off-switch.is-off .off-switch__thumb {
   transform: translateX(-18px);
 }
 
