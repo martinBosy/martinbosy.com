@@ -89,9 +89,8 @@
     filter 180ms ease;
 }
 
-.slider-category_component.is-changing-exercise .move-category-box {
+.slider-category_component.is-changing-exercise .move-category_text_block {
   opacity: 0;
-  transition-duration: 120ms, 180ms;
 }
 /* =========================================
    OVERLAY: transitions
